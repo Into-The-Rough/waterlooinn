@@ -8,9 +8,9 @@
   "about": {
     "title": "A Traditional Derbyshire Pub with a View",
     "paragraphs": [
-      "Located in the heart of Biggin, our elevated setting offers panoramic views across rolling farmland and open landscapes — making us one of the most scenic pub locations in the Peak District.",
-      "Whether you're visiting after a countryside walk or planning a relaxed weekend away, The Waterloo Inn delivers authentic village hospitality in an unforgettable setting. Step inside to find cosy fires, well-kept real ales, and hearty home-cooked food prepared with care.",
-      "We've been welcoming walkers, cyclists, families and their four-legged friends for years. Come for the views, stay for the atmosphere."
+      "Perched up in the village of Biggin, we look out across miles of rolling farmland and open countryside. It's one of the best spots for a pint in the whole Peak District.",
+      "Pop in after a walk or make a weekend of it on the campsite. Inside you'll find cosy fires, well-kept real ales and proper home-cooked food.",
+      "We've been welcoming walkers, cyclists, families and their four-legged friends for years. There's always a warm welcome waiting."
     ],
     "image": "/images/detail-heritage.webp",
     "imageAlt": "Heritage corner at The Waterloo Inn featuring a framed sketch of the pub, horse brasses and historical photos"
@@ -18,20 +18,20 @@
   "beerGarden": {
     "title": "One of the Best Beer Gardens in the Peak District",
     "paragraphs": [
-      "Our spacious beer garden overlooks stunning Derbyshire scenery, offering what many visitors describe as one of the best views in England. It's the perfect spot to unwind with a pint after a day on the hills.",
+      "Our beer garden looks out over proper Derbyshire countryside. Grab a pint, sit back and take it all in. On a clear day you won't want to leave.",
       "Few pubs combine space, scenery and atmosphere quite like The Waterloo Inn."
     ],
     "highlights": [
       "Outdoor dining with panoramic views",
       "Summer drinks overlooking the hills",
       "Walkers & cyclists welcome",
-      "Unforgettable sunsets"
+      "Cracking sunsets"
     ],
     "image": "/images/exterior-day-beergarden.webp"
   },
   "food": {
     "title": "Hearty Food & Fine Ales",
-    "description": "Our kitchen serves up honest, home-cooked pub food — the kind of hearty dishes you crave after a day in the Derbyshire countryside. Alongside well-kept real ales, quality wines and a warm welcome.",
+    "description": "Proper pub grub, cooked fresh. The kind of food you want after a day on the hills. Washed down with real ales and a glass of something nice.",
     "previewItems": [
       {
         "name": "Napoleon's Retreat",
@@ -52,7 +52,7 @@
   },
   "campsiteTeaser": {
     "title": "Peak District Camping with a View",
-    "description": "Our rustic campsite offers peaceful countryside camping in Biggin, just steps from the pub. Enjoy a day exploring the hills, then return for great food, real ale and an unforgettable sunset.",
+    "description": "Our campsite sits right next to the pub. Spend the day out on the hills, then wander back for a bite to eat and a pint as the sun goes down.",
     "features": [
       "Spacious grass pitches",
       "Electric hook-ups",
