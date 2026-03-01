@@ -18,9 +18,9 @@ activeNav: home
     <meta name="twitter:card" content="summary_large_image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet"></noscript>
     <link rel="stylesheet" href="/css/style.css">
-    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
 <body>
 
@@ -313,16 +313,10 @@ activeNav: home
         <img src="" alt="" id="lightboxImg">
     </div>
 
-    <script src="/js/main.js"></script>
+    <script src="/js/main.js" defer></script>
     <script>
-        if (window.netlifyIdentity) {
-            window.netlifyIdentity.on("init", function(user) {
-                if (!user) {
-                    window.netlifyIdentity.on("login", function() {
-                        document.location.href = "/admin/";
-                    });
-                }
-            });
+        if (document.location.hash.indexOf('invite_token') > -1 || document.location.hash.indexOf('confirmation_token') > -1) {
+            document.location.href = "/admin/#" + document.location.hash;
         }
     </script>
 </body>
