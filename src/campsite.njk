@@ -1,0 +1,82 @@
+---
+layout: false
+activeNav: campsite
+subpage: true
+headerFixed: true
+permalink: /campsite/
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campsite | {{ site.name }}, Biggin, Peak District</title>
+    <meta name="description" content="Rustic countryside camping at The Waterloo Inn, Biggin. Spacious grass pitches, electric hook-ups, showers and direct access to Peak District walking and cycling routes.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    {% include "header.njk" %}
+
+    <section class="page-hero" style="background-image: url('/images/exterior-day-beergarden.jpg');">
+        <div class="page-hero-content">
+            <div class="divider centered light">
+                <span class="divider-line"></span>
+                <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                <span class="divider-line"></span>
+            </div>
+            <h1>Campsite</h1>
+            <p>Peak District camping with a view</p>
+        </div>
+    </section>
+
+    <section class="campsite-section">
+        <div class="container">
+            <div class="campsite-intro">
+                {% include "divider.njk" %}
+                <h2 class="section-title centered">{{ campsite.title }}</h2>
+                {% for paragraph in campsite.intro %}
+                <p>{{ paragraph }}</p>
+                {% endfor %}
+            </div>
+            <div class="campsite-details">
+                {% for card in campsite.cards %}
+                <div class="campsite-card">
+                    <h3>{{ card.title }}</h3>
+                    <ul>
+                        {% for item in card.items %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section class="campsite-section" style="background-color: var(--green-dark); color: var(--text-light);">
+        <div class="container">
+            <div class="campsite-intro">
+                <div class="divider centered light">
+                    <span class="divider-line"></span>
+                    <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                    <span class="divider-line"></span>
+                </div>
+                <h2 class="section-title centered light">Book Your Pitch</h2>
+                <p style="color: rgba(245, 240, 232, 0.8);">To book a camping pitch or for any enquiries about the campsite, get in touch directly:</p>
+                <p style="color: rgba(245, 240, 232, 0.8); margin-bottom: 32px;">
+                    Phone: <a href="tel:{{ site.phone }}" style="color: var(--gold);">{{ site.phone }}</a><br>
+                    Email: <a href="mailto:{{ site.email }}" style="color: var(--gold);">{{ site.email }}</a>
+                </p>
+                <a href="/#contact" class="btn btn-gold">Find Us &amp; Directions</a>
+            </div>
+        </div>
+    </section>
+
+    {% include "footer.njk" %}
+    <script src="/js/main.js"></script>
+</body>
+</html>

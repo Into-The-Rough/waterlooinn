@@ -1,0 +1,18 @@
+{
+  "name": "The Waterloo Inn",
+  "phone": "01298 84284",
+  "email": "info@waterlooinnbiggin.com",
+  "address": {
+    "line1": "The Waterloo Inn",
+    "line2": "Biggin",
+    "line3": "Nr Hartington",
+    "line4": "Buxton",
+    "county": "Derbyshire",
+    "postcode": "SK17 0DH"
+  },
+  "social": {
+    "facebook": "",
+    "instagram": "",
+    "tripadvisor": ""
+  }
+}

@@ -1,0 +1,242 @@
+---
+layout: false
+activeNav: home
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ site.name }} | Peak District Pub with Campsite, Beer Garden &amp; Stunning Views</title>
+    <meta name="description" content="{{ homepage.hero.description }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+</head>
+<body>
+
+    {% include "header.njk" %}
+
+    {# ========== HERO ========== #}
+    <section class="hero">
+        <div class="hero-bg" style="background-image: url('{{ homepage.hero.image }}');"></div>
+        <div class="hero-content">
+            <p class="hero-tag">{{ homepage.hero.tagline }}</p>
+            <h1>{{ homepage.hero.title }}</h1>
+            <p class="hero-description">{{ homepage.hero.description }}</p>
+            <div class="hero-buttons">
+                <a href="/menu/" class="btn btn-gold">View Our Menu</a>
+                <a href="/campsite/" class="btn btn-outline-light">Campsite Info</a>
+            </div>
+        </div>
+        <div class="hero-scroll">Scroll</div>
+    </section>
+
+    {# ========== WELCOME / ABOUT ========== #}
+    <section class="welcome" id="welcome">
+        <div class="container">
+            <div class="welcome-grid">
+                <div class="welcome-text">
+                    {% include "divider.njk" %}
+                    <h2 class="section-title">{{ homepage.about.title }}</h2>
+                    {% for paragraph in homepage.about.paragraphs %}
+                    <p>{{ paragraph }}</p>
+                    {% endfor %}
+                </div>
+                <div class="welcome-image">
+                    <img src="{{ homepage.about.image }}" alt="{{ homepage.about.imageAlt }}" loading="lazy">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {# ========== FEATURES STRIP ========== #}
+    <section class="features">
+        <div class="container">
+            <div class="features-grid">
+                <div class="feature-item">
+                    <div class="feature-icon">&#127860;</div>
+                    <div class="feature-label">Home-Cooked Food</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">&#127866;</div>
+                    <div class="feature-label">Real Ales</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">&#128293;</div>
+                    <div class="feature-label">Cosy Fires</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">&#128054;</div>
+                    <div class="feature-label">Dog Friendly</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">&#9968;</div>
+                    <div class="feature-label">Campsite</div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">&#127797;</div>
+                    <div class="feature-label">Beer Garden</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {# ========== BEER GARDEN ========== #}
+    <section class="beer-garden" style="background-image: url('{{ homepage.beerGarden.image }}');">
+        <div class="container">
+            <div class="beer-garden-content">
+                <div class="divider light">
+                    <span class="divider-line"></span>
+                    <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                    <span class="divider-line"></span>
+                </div>
+                <h2 class="section-title light">{{ homepage.beerGarden.title }}</h2>
+                {% for paragraph in homepage.beerGarden.paragraphs %}
+                <p>{{ paragraph }}</p>
+                {% endfor %}
+                <ul class="beer-garden-highlights">
+                    {% for item in homepage.beerGarden.highlights %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    {# ========== FOOD & DRINK ========== #}
+    <section class="food-drink" id="food">
+        <div class="container">
+            <div class="food-grid">
+                <div class="food-images">
+                    <img src="/images/food-ciabatta.jpg" alt="Freshly made ciabatta sandwich with salad and a pint of real ale at The Waterloo Inn" loading="lazy">
+                    <img src="/images/food-cottage-pie.jpg" alt="Home-cooked cottage pie with chips and salad" loading="lazy">
+                    <img src="/images/interior-bar.jpg" alt="Traditional wooden bar with brass beer pumps and tartan stools" loading="lazy">
+                </div>
+                <div class="food-text">
+                    {% include "divider.njk" %}
+                    <h2>{{ homepage.food.title }}</h2>
+                    <p>{{ homepage.food.description }}</p>
+                    <ul class="menu-highlights">
+                        {% for item in homepage.food.previewItems %}
+                        <li>
+                            <div>
+                                <span class="dish-name">{{ item.name }}</span>
+                                <span class="dish-desc">{{ item.description }}</span>
+                            </div>
+                            <span class="dish-price">{{ item.price }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <a href="/menu/" class="btn btn-gold">View Full Menu</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {# ========== GALLERY ========== #}
+    <section class="gallery" id="gallery">
+        <div class="container">
+            <div class="divider centered light" style="margin-bottom: 16px;">
+                <span class="divider-line"></span>
+                <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                <span class="divider-line"></span>
+            </div>
+            <h2 class="section-title centered light" style="margin-bottom: 48px;">Gallery</h2>
+        </div>
+        <div class="gallery-grid">
+            {% for item in gallery.items %}
+            <div class="gallery-item{% if item.featured %} featured{% endif %}">
+                <img src="{{ item.image }}" alt="{{ item.alt }}" loading="lazy">
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ========== CAMPSITE TEASER ========== #}
+    <section class="campsite-teaser" id="campsite">
+        <div class="container">
+            <div class="campsite-grid">
+                <div class="campsite-image">
+                    <img src="{{ homepage.campsiteTeaser.image }}" alt="The Waterloo Inn campsite and grounds" loading="lazy">
+                </div>
+                <div class="campsite-text">
+                    {% include "divider.njk" %}
+                    <h2>{{ homepage.campsiteTeaser.title }}</h2>
+                    <p>{{ homepage.campsiteTeaser.description }}</p>
+                    <ul class="campsite-features">
+                        {% for feature in homepage.campsiteTeaser.features %}
+                        <li>{{ feature }}</li>
+                        {% endfor %}
+                    </ul>
+                    <a href="/campsite/" class="btn btn-gold">Campsite Details</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {# ========== CONTACT / FIND US ========== #}
+    <section class="contact" id="contact">
+        <div class="container">
+            <div class="divider centered light">
+                <span class="divider-line"></span>
+                <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                <span class="divider-line"></span>
+            </div>
+            <h2 class="section-title centered light" style="margin-bottom: 48px;">Find Us</h2>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <h3>Address</h3>
+                    <address>
+                        {{ site.address.line1 }}<br>
+                        {{ site.address.line2 }}<br>
+                        {{ site.address.line3 }}<br>
+                        {{ site.address.line4 }}<br>
+                        {{ site.address.county }}<br>
+                        {{ site.address.postcode }}
+                    </address>
+                    <h3>Get in Touch</h3>
+                    <p>
+                        Phone: <a href="tel:{{ site.phone }}">{{ site.phone }}</a><br>
+                        Email: <a href="mailto:{{ site.email }}">{{ site.email }}</a>
+                    </p>
+                    <h3>Opening Hours</h3>
+                    <table class="hours-table">
+                        {% for entry in hours.items %}
+                        <tr><td>{{ entry.day }}</td><td>{{ entry.times }}</td></tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                <div class="contact-map">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2409.8!2d-1.7583!3d53.1308!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487a28a0e7c00001%3A0x4c0a4f5e8c7b0a0!2sThe%20Waterloo%20Inn!5e0!3m2!1sen!2suk!4v1" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map showing The Waterloo Inn location in Biggin, Derbyshire"></iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {% include "footer.njk" %}
+
+    {# ========== LIGHTBOX ========== #}
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" aria-label="Close gallery">&times;</button>
+        <button class="lightbox-prev" aria-label="Previous image">&#8249;</button>
+        <button class="lightbox-next" aria-label="Next image">&#8250;</button>
+        <img src="" alt="" id="lightboxImg">
+    </div>
+
+    <script src="/js/main.js"></script>
+    <script>
+        if (window.netlifyIdentity) {
+            window.netlifyIdentity.on("init", function(user) {
+                if (!user) {
+                    window.netlifyIdentity.on("login", function() {
+                        document.location.href = "/admin/";
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>

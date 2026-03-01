@@ -1,0 +1,72 @@
+---
+layout: false
+activeNav: menu
+subpage: true
+headerFixed: true
+permalink: /menu/
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food &amp; Drink Menu | {{ site.name }}, Biggin, Peak District</title>
+    <meta name="description" content="View the food and drink menu at The Waterloo Inn, Biggin. Home-cooked pub food, traditional Sunday roasts, real ales and quality wines in the heart of the Peak District.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    {% include "header.njk" %}
+
+    <section class="page-hero" style="background-image: url('/images/food-ciabatta.jpg');">
+        <div class="page-hero-content">
+            <div class="divider centered light">
+                <span class="divider-line"></span>
+                <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                <span class="divider-line"></span>
+            </div>
+            <h1>Food &amp; Drink</h1>
+            <p>Honest, home-cooked pub food &amp; well-kept real ales</p>
+        </div>
+    </section>
+
+    {% for category in menu.categories %}
+    <section class="menu-section">
+        <div class="container">
+            <div class="menu-category">
+                <h2>{{ category.name }}</h2>
+                <div class="divider centered">
+                    <span class="divider-line"></span>
+                    <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                    <span class="divider-line"></span>
+                </div>
+                {% if category.subtitle %}<p>{{ category.subtitle }}</p>{% endif %}
+
+                {% for item in category.items %}
+                <div class="menu-item">
+                    <div class="menu-item-header">
+                        <span class="menu-item-name">{{ item.name }}{% for tag in item.tags %} <span class="menu-item-tag tag-{{ tag | lower }}">{{ tag }}</span>{% endfor %}</span>
+                        <span class="menu-item-dots"></span>
+                        <span class="menu-item-price">{{ item.price }}</span>
+                    </div>
+                    {% if item.description %}<div class="menu-item-desc">{{ item.description }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endfor %}
+
+    <div class="menu-section">
+        <div class="container">
+            <p class="menu-note">{{ menu.allergenNote }}</p>
+        </div>
+    </div>
+
+    {% include "footer.njk" %}
+    <script src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "items": [
+    { "day": "Monday", "times": "12:00 – 23:00" },
+    { "day": "Tuesday", "times": "12:00 – 23:00" },
+    { "day": "Wednesday", "times": "12:00 – 23:00" },
+    { "day": "Thursday", "times": "12:00 – 23:00" },
+    { "day": "Friday", "times": "12:00 – 23:00" },
+    { "day": "Saturday", "times": "12:00 – 23:00" },
+    { "day": "Sunday", "times": "12:00 – 22:30" }
+  ]
+}

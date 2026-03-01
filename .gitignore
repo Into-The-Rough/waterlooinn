@@ -1,0 +1,8 @@
+node_modules/
+_site/
+.cache/
+_source/
+*.log
+.DS_Store
+Thumbs.db
+screenshot-*.png

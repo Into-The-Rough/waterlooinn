@@ -1,0 +1,136 @@
+{
+  "categories": [
+    {
+      "name": "Waterloo Plates of the Day",
+      "subtitle": "Hearty dishes served with care",
+      "items": [
+        {
+          "name": "Napoleon's Retreat",
+          "description": "Cottage pie, beef slowly cooked in gravy topped with buttery mash, cheese and baked until golden. Served with chips. Comfort food that always surrenders an empty plate!",
+          "price": "£15.95",
+          "tags": []
+        },
+        {
+          "name": "The Dukes Firepot",
+          "description": "A hearty vegi mince chilli packed with spice and served sour cream, rice or chips and sour cream. Bold, warming and proudly meat free!",
+          "price": "£15.95",
+          "tags": ["V"]
+        },
+        {
+          "name": "The Victory Tang",
+          "description": "The Waterloo take on a non battered classic sweet and sour dish. Fresh pineapple, red & green peppers, onion served with long grain or wholemeal rice and prawn crackers. Chicken, Prawn or Plain.",
+          "price": "£15.95",
+          "tags": []
+        }
+      ]
+    },
+    {
+      "name": "The Waterloo Melt House",
+      "subtitle": "Baked fresh to order",
+      "items": [
+        {
+          "name": "The Waterloo Toastie",
+          "description": "Derbyshire ham, mature cheddar & wholegrain mustard mayo on a farmhouse bloomer",
+          "price": "£9.95",
+          "tags": []
+        },
+        {
+          "name": "Brie & Cranberry Ciabatta",
+          "description": "Peak brie, house cranberry chutney & rocket on a rustic ciabatta",
+          "price": "£9.95",
+          "tags": ["V"]
+        },
+        {
+          "name": "Beef & Blue Ciabatta",
+          "description": "Derbyshire Beef mixed with rich gravy, Peak Blue & onion jam on a toasted ciabatta",
+          "price": "£10.95",
+          "tags": []
+        },
+        {
+          "name": "The Ultimate Tuna Melt",
+          "description": "Tuna with melted cheddar, rocket in a toasted brioche",
+          "price": "£9.95",
+          "tags": []
+        },
+        {
+          "name": "The Waterloo Chip Butty",
+          "description": "Triple-cooked beef dripping chips, Peak cheddar & house onion gravy in a toasted brioche",
+          "price": "£8.95",
+          "tags": []
+        },
+        {
+          "name": "Vegan Roast Pepper & Pesto Ciabatta",
+          "description": "Roasted red pepper with Vegan Cheese, Spinach & Vegan Basil Pesto in a Warm Ciabatta",
+          "price": "£9.25",
+          "tags": ["VE"]
+        }
+      ]
+    },
+    {
+      "name": "Jacket Potatoes",
+      "subtitle": "Freshly baked, served with salad garnish",
+      "items": [
+        { "name": "Beef Chilli Con Carne", "description": "", "price": "£8.95", "tags": ["GF"] },
+        { "name": "Chicken Tikka", "description": "", "price": "£8.95", "tags": [] },
+        { "name": "Tuna Mayo", "description": "", "price": "£8.95", "tags": [] },
+        { "name": "Cheese with Beans or Coleslaw", "description": "", "price": "£8.95", "tags": [] },
+        { "name": "Extra topping", "description": "", "price": "£2.00", "tags": [] }
+      ]
+    },
+    {
+      "name": "Sides & Extras",
+      "subtitle": "",
+      "items": [
+        { "name": "Triple Cooked Chips", "description": "", "price": "£4.95", "tags": [] },
+        { "name": "Halloumi Fries with Chilli Sauce", "description": "", "price": "£5.25", "tags": [] },
+        { "name": "House Salad with Honey Mustard Dressing", "description": "", "price": "£4.25", "tags": ["VE"] },
+        { "name": "Garlic Bread", "description": "", "price": "£3.50", "tags": ["V"] },
+        { "name": "Fennel & Apple Slaw", "description": "", "price": "£3.50", "tags": ["VE", "GF"] },
+        { "name": "Hartington Cheese Board with Chutney, Pickles & Crackers", "description": "", "price": "£8.95", "tags": [] }
+      ]
+    },
+    {
+      "name": "Dessert Menu",
+      "subtitle": "All desserts £7.25",
+      "items": [
+        {
+          "name": "Sticky Toffee Pudding",
+          "description": "Waterloo-made date sponge with butterscotch sauce & vanilla ice cream",
+          "price": "£7.25",
+          "tags": []
+        },
+        {
+          "name": "Apple & Berry Crumble",
+          "description": "Local fruit under a buttery oat crumble with custard or cream",
+          "price": "£7.25",
+          "tags": ["V", "VE"]
+        },
+        {
+          "name": "Baked Vanilla Cheesecake",
+          "description": "Classic baked cheesecake with berry compote & whipped cream",
+          "price": "£7.25",
+          "tags": []
+        },
+        {
+          "name": "Boston Chocolate Brownie",
+          "description": "A moist chocolate fudge brownie topped with loads of dark chocolate chips served with ice cream",
+          "price": "£7.25",
+          "tags": []
+        },
+        {
+          "name": "Parkin Ginger Cake",
+          "description": "Parkin is a gingerbread cake traditionally made with oatmeal and black treacle served with ice cream",
+          "price": "£7.25",
+          "tags": []
+        },
+        {
+          "name": "Hartington Cheeseboard",
+          "description": "A selection of Hartington cheeses served with chutney, pickles & crackers",
+          "price": "£8.95",
+          "tags": []
+        }
+      ]
+    }
+  ],
+  "allergenNote": "Please ask a member of staff about allergens. We cater for dietary requirements where possible."
+}

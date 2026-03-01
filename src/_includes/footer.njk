@@ -1,0 +1,19 @@
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">The Waterloo <span>Inn</span></div>
+                <ul class="footer-links">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/menu/">Menu</a></li>
+                    <li><a href="/campsite/">Campsite</a></li>
+                    <li><a href="/#contact">Contact</a></li>
+                </ul>
+                <ul class="footer-social">
+                    {% if site.social.facebook %}<li><a href="{{ site.social.facebook }}" aria-label="Facebook" target="_blank" rel="noopener">f</a></li>{% endif %}
+                    {% if site.social.instagram %}<li><a href="{{ site.social.instagram }}" aria-label="Instagram" target="_blank" rel="noopener">&#9679;</a></li>{% endif %}
+                    {% if site.social.tripadvisor %}<li><a href="{{ site.social.tripadvisor }}" aria-label="TripAdvisor" target="_blank" rel="noopener">&#9733;</a></li>{% endif %}
+                </ul>
+                <p class="footer-copy">&copy; {{ "" | currentYear }} The Waterloo Inn, Biggin, Derbyshire. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>

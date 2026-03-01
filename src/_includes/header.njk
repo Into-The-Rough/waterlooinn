@@ -1,0 +1,20 @@
+    <header class="header{% if headerFixed %} scrolled{% endif %}" id="header">
+        <div class="container">
+            <a href="/" class="logo">The Waterloo <span>Inn</span></a>
+            <nav>
+                <ul class="nav-links" id="navLinks">
+                    <li><a href="{% if subpage %}/#welcome{% else %}#welcome{% endif %}"{% if activeNav == 'about' %} class="active"{% endif %}>About</a></li>
+                    <li><a href="/menu/"{% if activeNav == 'menu' %} class="active"{% endif %}>Menu</a></li>
+                    <li><a href="{% if subpage %}/#gallery{% else %}#gallery{% endif %}"{% if activeNav == 'gallery' %} class="active"{% endif %}>Gallery</a></li>
+                    <li><a href="/campsite/"{% if activeNav == 'campsite' %} class="active"{% endif %}>Campsite</a></li>
+                    <li><a href="{% if subpage %}/#contact{% else %}#contact{% endif %}">Find Us</a></li>
+                    <li><a href="tel:{{ site.phone }}" class="nav-phone">{{ site.phone }}</a></li>
+                </ul>
+            </nav>
+            <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </header>

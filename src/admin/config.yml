@@ -1,0 +1,174 @@
+backend:
+  name: git-gateway
+  branch: main
+
+media_folder: "src/images"
+public_folder: "/images"
+
+collections:
+  # ==========================================
+  # SITE SETTINGS
+  # ==========================================
+  - name: "settings"
+    label: "Site Settings"
+    files:
+      - name: "site"
+        label: "Contact & Social"
+        file: "src/_data/site.json"
+        fields:
+          - { name: "name", label: "Pub Name", widget: "string" }
+          - { name: "phone", label: "Phone Number", widget: "string" }
+          - { name: "email", label: "Email Address", widget: "string" }
+          - name: "address"
+            label: "Address"
+            widget: "object"
+            fields:
+              - { name: "line1", label: "Line 1", widget: "string" }
+              - { name: "line2", label: "Line 2 (Village)", widget: "string" }
+              - { name: "line3", label: "Line 3", widget: "string" }
+              - { name: "line4", label: "Line 4 (Town)", widget: "string" }
+              - { name: "county", label: "County", widget: "string" }
+              - { name: "postcode", label: "Postcode", widget: "string" }
+          - name: "social"
+            label: "Social Media Links"
+            widget: "object"
+            fields:
+              - { name: "facebook", label: "Facebook URL", widget: "string", required: false }
+              - { name: "instagram", label: "Instagram URL", widget: "string", required: false }
+              - { name: "tripadvisor", label: "TripAdvisor URL", widget: "string", required: false }
+
+      - name: "hours"
+        label: "Opening Hours"
+        file: "src/_data/hours.json"
+        fields:
+          - name: "items"
+            label: "Hours"
+            label_singular: "Day"
+            widget: "list"
+            fields:
+              - { name: "day", label: "Day", widget: "string" }
+              - { name: "times", label: "Times", widget: "string", hint: "e.g. 12:00 – 23:00 or Closed" }
+
+  # ==========================================
+  # HOMEPAGE
+  # ==========================================
+  - name: "homepage"
+    label: "Homepage"
+    files:
+      - name: "homepage"
+        label: "Homepage Content"
+        file: "src/_data/homepage.json"
+        fields:
+          - name: "hero"
+            label: "Hero Section"
+            widget: "object"
+            fields:
+              - { name: "tagline", label: "Tagline (small text above title)", widget: "string" }
+              - { name: "title", label: "Title", widget: "string" }
+              - { name: "description", label: "Description", widget: "text" }
+              - { name: "image", label: "Background Image", widget: "image" }
+          - name: "about"
+            label: "About Section"
+            widget: "object"
+            fields:
+              - { name: "title", label: "Title", widget: "string" }
+              - { name: "paragraphs", label: "Paragraphs", widget: "list", field: { name: "text", label: "Paragraph", widget: "text" } }
+              - { name: "image", label: "Image", widget: "image" }
+              - { name: "imageAlt", label: "Image Description (for accessibility)", widget: "string" }
+          - name: "beerGarden"
+            label: "Beer Garden Section"
+            widget: "object"
+            fields:
+              - { name: "title", label: "Title", widget: "string" }
+              - { name: "paragraphs", label: "Paragraphs", widget: "list", field: { name: "text", label: "Paragraph", widget: "text" } }
+              - { name: "highlights", label: "Highlight Points", widget: "list", field: { name: "text", label: "Point", widget: "string" } }
+              - { name: "image", label: "Background Image", widget: "image" }
+          - name: "food"
+            label: "Food Preview Section"
+            widget: "object"
+            fields:
+              - { name: "title", label: "Title", widget: "string" }
+              - { name: "description", label: "Description", widget: "text" }
+              - name: "previewItems"
+                label: "Preview Menu Items (shown on homepage)"
+                widget: "list"
+                max: 3
+                fields:
+                  - { name: "name", label: "Dish Name", widget: "string" }
+                  - { name: "description", label: "Short Description", widget: "string" }
+                  - { name: "price", label: "Price", widget: "string" }
+          - name: "campsiteTeaser"
+            label: "Campsite Preview Section"
+            widget: "object"
+            fields:
+              - { name: "title", label: "Title", widget: "string" }
+              - { name: "description", label: "Description", widget: "text" }
+              - { name: "features", label: "Feature Points", widget: "list", field: { name: "text", label: "Feature", widget: "string" } }
+              - { name: "image", label: "Image", widget: "image" }
+
+  # ==========================================
+  # MENU
+  # ==========================================
+  - name: "menu"
+    label: "Food & Drink Menu"
+    files:
+      - name: "menu"
+        label: "Menu"
+        file: "src/_data/menu.json"
+        fields:
+          - name: "categories"
+            label: "Menu Sections"
+            label_singular: "Section"
+            widget: "list"
+            fields:
+              - { name: "name", label: "Section Name", widget: "string", hint: "e.g. Plates of the Day, Melt House, Desserts" }
+              - { name: "subtitle", label: "Subtitle", widget: "string", required: false }
+              - name: "items"
+                label: "Menu Items"
+                label_singular: "Item"
+                widget: "list"
+                fields:
+                  - { name: "name", label: "Dish Name", widget: "string" }
+                  - { name: "description", label: "Description", widget: "string", required: false }
+                  - { name: "price", label: "Price", widget: "string", hint: "Include the £ sign, e.g. £9.95" }
+                  - { name: "tags", label: "Dietary Tags", widget: "select", multiple: true, required: false, options: ["V", "VE", "GF"], hint: "V = Vegetarian, VE = Vegan, GF = Gluten Free" }
+          - { name: "allergenNote", label: "Allergen Note (bottom of menu)", widget: "string" }
+
+  # ==========================================
+  # GALLERY
+  # ==========================================
+  - name: "gallery"
+    label: "Gallery"
+    files:
+      - name: "gallery"
+        label: "Gallery Images"
+        file: "src/_data/gallery.json"
+        fields:
+          - name: "items"
+            label: "Images"
+            label_singular: "Image"
+            widget: "list"
+            fields:
+              - { name: "image", label: "Image", widget: "image" }
+              - { name: "alt", label: "Description", widget: "string", hint: "Describe the image briefly for accessibility" }
+              - { name: "featured", label: "Featured (large size)", widget: "boolean", default: false }
+
+  # ==========================================
+  # CAMPSITE
+  # ==========================================
+  - name: "campsite"
+    label: "Campsite Page"
+    files:
+      - name: "campsite"
+        label: "Campsite Content"
+        file: "src/_data/campsite.json"
+        fields:
+          - { name: "title", label: "Page Title", widget: "string" }
+          - { name: "intro", label: "Introduction Paragraphs", widget: "list", field: { name: "text", label: "Paragraph", widget: "text" } }
+          - name: "cards"
+            label: "Info Cards"
+            label_singular: "Card"
+            widget: "list"
+            fields:
+              - { name: "title", label: "Card Title", widget: "string" }
+              - { name: "items", label: "Bullet Points", widget: "list", field: { name: "text", label: "Point", widget: "string" } }

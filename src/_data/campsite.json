@@ -1,0 +1,40 @@
+{
+  "title": "Peaceful Countryside Camping in Biggin",
+  "intro": [
+    "Our rustic campsite sits right alongside the pub, offering peaceful countryside camping just steps from great food, real ale and one of the best views in the Peak District.",
+    "Whether you're here for a walking weekend, a cycling break or simply to get away from it all, you'll find everything you need for a comfortable stay in beautiful Derbyshire countryside.",
+    "Enjoy a day exploring the hills, then return to your pitch for an unforgettable sunset over the rolling farmland — followed by a well-earned pint in the pub."
+  ],
+  "cards": [
+    {
+      "title": "Pitches & Facilities",
+      "items": [
+        "Spacious grass pitches",
+        "Electric hook-ups available",
+        "Showers & toilets on site",
+        "Suitable for tents and campervans",
+        "Dogs welcome"
+      ]
+    },
+    {
+      "title": "Walking & Cycling",
+      "items": [
+        "Direct access to Peak District routes",
+        "Stunning walks straight from your pitch",
+        "Tissington Trail nearby",
+        "High Peak Trail accessible",
+        "Perfect base for exploring the Peaks"
+      ]
+    },
+    {
+      "title": "On Your Doorstep",
+      "items": [
+        "Home-cooked pub food steps away",
+        "Well-kept real ales on tap",
+        "Large beer garden with panoramic views",
+        "Cosy pub interior for rainy days",
+        "Friendly, welcoming atmosphere"
+      ]
+    }
+  ]
+}
