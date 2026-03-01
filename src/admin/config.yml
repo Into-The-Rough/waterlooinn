@@ -17,6 +17,7 @@ collections:
         file: "src/_data/site.json"
         fields:
           - { name: "name", label: "Pub Name", widget: "string" }
+          - { name: "url", label: "Site URL", widget: "string", hint: "Full URL including https://, e.g. https://waterlooinnbiggin.com" }
           - { name: "phone", label: "Phone Number", widget: "string" }
           - { name: "email", label: "Email Address", widget: "string" }
           - name: "address"
