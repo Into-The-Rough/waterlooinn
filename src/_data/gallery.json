@@ -1,12 +1,12 @@
 {
   "items": [
-    { "image": "/images/exterior-day-beergarden.jpg", "alt": "The Waterloo Inn exterior with beer garden and picnic benches", "featured": true },
-    { "image": "/images/food-ciabatta.jpg", "alt": "Freshly made ciabatta sandwich", "featured": false },
-    { "image": "/images/interior-bar.jpg", "alt": "Traditional wooden bar", "featured": false },
-    { "image": "/images/interior-seating.jpg", "alt": "Cosy pub seating area", "featured": false },
-    { "image": "/images/food-cottage-pie.jpg", "alt": "Home-cooked cottage pie", "featured": false },
-    { "image": "/images/exterior-night-lantern.jpg", "alt": "Bass lantern outside The Waterloo Inn at night", "featured": false },
-    { "image": "/images/detail-heritage.jpg", "alt": "Heritage corner with historical sketch of the pub", "featured": false },
-    { "image": "/images/bar-festive.jpg", "alt": "Wine glasses and festive decorations at the bar", "featured": false }
+    { "image": "/images/exterior-day-beergarden.webp", "alt": "The Waterloo Inn exterior with beer garden and picnic benches", "featured": true },
+    { "image": "/images/food-ciabatta.webp", "alt": "Freshly made ciabatta sandwich", "featured": false },
+    { "image": "/images/interior-bar.webp", "alt": "Traditional wooden bar", "featured": false },
+    { "image": "/images/interior-seating.webp", "alt": "Cosy pub seating area", "featured": false },
+    { "image": "/images/food-cottage-pie.webp", "alt": "Home-cooked cottage pie", "featured": false },
+    { "image": "/images/exterior-night-lantern.webp", "alt": "Bass lantern outside The Waterloo Inn at night", "featured": false },
+    { "image": "/images/detail-heritage.webp", "alt": "Heritage corner with historical sketch of the pub", "featured": false },
+    { "image": "/images/bar-festive.webp", "alt": "Wine glasses and festive decorations at the bar", "featured": false }
   ]
 }
