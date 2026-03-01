@@ -9,6 +9,13 @@ activeNav: home
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ site.name }} | Peak District Pub with Campsite, Beer Garden &amp; Stunning Views</title>
     <meta name="description" content="{{ homepage.hero.description }}">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta property="og:title" content="{{ site.name }} | Peak District Pub with Campsite & Beer Garden">
+    <meta property="og:description" content="{{ homepage.hero.description }}">
+    <meta property="og:image" content="https://subtle-cactus-eb5817.netlify.app/images/exterior-day-beergarden.jpg">
+    <meta property="og:url" content="https://subtle-cactus-eb5817.netlify.app/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
@@ -177,6 +184,86 @@ activeNav: home
         </div>
     </section>
 
+    {# ========== EVENTS / WHAT'S ON ========== #}
+    {% if events.items.length %}
+    <section class="events" id="events">
+        <div class="container">
+            <div class="divider centered">
+                <span class="divider-line"></span>
+                <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                <span class="divider-line"></span>
+            </div>
+            <h2 class="section-title centered">{{ events.title }}</h2>
+            <div class="events-grid">
+                {% for event in events.items %}
+                <div class="event-card">
+                    {% if event.image %}<img src="{{ event.image }}" alt="{{ event.name }}" loading="lazy">{% endif %}
+                    <div class="event-card-body">
+                        <span class="event-day">{{ event.day }}</span>
+                        <h3>{{ event.name }}</h3>
+                        <p>{{ event.description }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {# ========== BOOKING REQUEST ========== #}
+    <section class="booking" id="booking">
+        <div class="container">
+            <div class="divider centered light">
+                <span class="divider-line"></span>
+                <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                <span class="divider-line"></span>
+            </div>
+            <h2 class="section-title centered light">Book a Table</h2>
+            <p class="booking-intro">Request a table and we'll get back to you to confirm. Alternatively, call us on <a href="tel:{{ site.phone }}">{{ site.phone }}</a>.</p>
+            <form name="booking" method="POST" data-netlify="true" class="booking-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" name="phone" required>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="date">Date</label>
+                        <input type="date" id="date" name="date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="time">Time</label>
+                        <input type="time" id="time" name="time" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="party">Party Size</label>
+                        <select id="party" name="party" required>
+                            <option value="">Select</option>
+                            <option>1</option>
+                            <option>2</option>
+                            <option>3</option>
+                            <option>4</option>
+                            <option>5</option>
+                            <option>6</option>
+                            <option>7</option>
+                            <option>8+</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="message">Special Requests (optional)</label>
+                    <textarea id="message" name="message" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-gold">Request Booking</button>
+            </form>
+        </div>
+    </section>
+
     {# ========== CONTACT / FIND US ========== #}
     <section class="contact" id="contact">
         <div class="container">
@@ -210,7 +297,7 @@ activeNav: home
                     </table>
                 </div>
                 <div class="contact-map">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2409.8!2d-1.7583!3d53.1308!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487a28a0e7c00001%3A0x4c0a4f5e8c7b0a0!2sThe%20Waterloo%20Inn!5e0!3m2!1sen!2suk!4v1" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map showing The Waterloo Inn location in Biggin, Derbyshire"></iframe>
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2409.8!2d-1.773563!3d53.132485!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x487a2489b4cca4f3%3A0xd37de8507bdf14c0!2sThe%20Waterloo%20Inn!5e0!3m2!1sen!2suk!4v1" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Map showing The Waterloo Inn location in Biggin, Derbyshire"></iframe>
                 </div>
             </div>
         </div>

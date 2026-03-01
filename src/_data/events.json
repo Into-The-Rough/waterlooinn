@@ -1,0 +1,11 @@
+{
+  "title": "What's On",
+  "items": [
+    {
+      "name": "Sunday Roast",
+      "description": "Traditional roast dinner served every Sunday from 12pm. Booking recommended.",
+      "day": "Every Sunday",
+      "image": "/images/food-cottage-pie.jpg"
+    }
+  ]
+}

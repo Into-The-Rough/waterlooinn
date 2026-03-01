@@ -133,6 +133,7 @@ collections:
                   - { name: "price", label: "Price", widget: "string", hint: "Include the £ sign, e.g. £9.95" }
                   - { name: "tags", label: "Dietary Tags", widget: "select", multiple: true, required: false, options: ["V", "VE", "GF"], hint: "V = Vegetarian, VE = Vegan, GF = Gluten Free" }
           - { name: "allergenNote", label: "Allergen Note (bottom of menu)", widget: "string" }
+          - { name: "pdfMenu", label: "Downloadable PDF Menu (optional)", widget: "file", required: false, hint: "Upload a PDF version of your menu for customers to download", media_folder: "src/uploads", public_folder: "/uploads" }
 
   # ==========================================
   # GALLERY
@@ -152,6 +153,27 @@ collections:
               - { name: "image", label: "Image", widget: "image" }
               - { name: "alt", label: "Description", widget: "string", hint: "Describe the image briefly for accessibility" }
               - { name: "featured", label: "Featured (large size)", widget: "boolean", default: false }
+
+  # ==========================================
+  # EVENTS / WHAT'S ON
+  # ==========================================
+  - name: "events"
+    label: "What's On"
+    files:
+      - name: "events"
+        label: "Events & Specials"
+        file: "src/_data/events.json"
+        fields:
+          - { name: "title", label: "Section Title", widget: "string", default: "What's On" }
+          - name: "items"
+            label: "Events"
+            label_singular: "Event"
+            widget: "list"
+            fields:
+              - { name: "name", label: "Event Name", widget: "string" }
+              - { name: "description", label: "Description", widget: "text" }
+              - { name: "day", label: "When", widget: "string", hint: "e.g. Every Sunday, First Friday of the month, 15th March" }
+              - { name: "image", label: "Image (optional)", widget: "image", required: false }
 
   # ==========================================
   # CAMPSITE
