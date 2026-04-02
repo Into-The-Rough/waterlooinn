@@ -6,6 +6,11 @@
       "description": "Traditional roast dinner served every Sunday from 12pm. Booking recommended.",
       "day": "Every Sunday",
       "image": "/images/food-cottage-pie.webp"
+    },
+    {
+      "name": "Live music Saturday 4th April 2026",
+      "description": "Local popular duo Top Marx ! 9pm",
+      "day": "4th April 2026"
     }
   ]
 }
