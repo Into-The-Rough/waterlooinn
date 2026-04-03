@@ -102,34 +102,37 @@
       ]
     },
     {
-      "name": "Jacket Potatoes",
-      "subtitle": "Freshly baked, served with salad garnish",
+      "name": "Starters",
+      "subtitle": "",
       "items": [
         {
-          "name": "Beef Chilli Con Carne",
-          "description": "",
-          "price": "£8.95",
+          "name": "Waterloo Corn Ribs (VE/GF)",
+          "description": "Delicious bitesize cornribs fried crisp and dusted with our Waterloo seasoning served with chilli dip. Great as a starter or on their own a a nibble !",
+          "price": "£7.25",
           "tags": [
-            "GF"
+            "GF",
+            "VE"
           ]
         },
         {
-          "name": "Chicken Tikka",
-          "description": "",
-          "price": "£8.95",
+          "name": "Venison Pate",
+          "description": "Served with sourdough bread, dressed mixed leaves and onion chutney",
+          "price": "£7.95",
           "tags": []
         },
         {
-          "name": "Tuna Mayo",
-          "description": "",
-          "price": "£8.95",
+          "name": "Crispy Whitebait",
+          "description": "Lightly floured whitebait fried until golden served with lemon mayo and charred lemon",
+          "price": "£6.95",
           "tags": []
         },
         {
-          "name": "Cheese with Beans or Coleslaw",
-          "description": "",
-          "price": "£8.95",
-          "tags": []
+          "name": "Baked Feta with Honey (V)",
+          "description": "Warm feta drizzled with honey served with pita bread to dip. Delicious as a starter or just to nibble !",
+          "price": "£7.95",
+          "tags": [
+            "V"
+          ]
         },
         {
           "name": "Extra topping",
