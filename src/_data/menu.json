@@ -60,15 +60,15 @@
       "subtitle": "Baked fresh to order",
       "items": [
         {
-          "name": "The Waterloo Toastie",
+          "name": "Wholesome Ham & Cheese chomper",
           "description": "Derbyshire ham, mature cheddar & wholegrain mustard mayo on a farmhouse bloomer",
-          "price": "£9.95",
+          "price": "£10.95",
           "tags": []
         },
         {
           "name": "Brie & Cranberry Ciabatta",
           "description": "Peak brie, house cranberry chutney & rocket on a rustic ciabatta",
-          "price": "£9.95",
+          "price": "£10.95",
           "tags": [
             "V"
           ]
@@ -76,13 +76,13 @@
         {
           "name": "Beef & Blue Ciabatta",
           "description": "Derbyshire Beef mixed with rich gravy, Peak Blue & onion jam on a toasted ciabatta",
-          "price": "£10.95",
+          "price": "£12.95",
           "tags": []
         },
         {
-          "name": "The Ultimate Tuna Melt",
-          "description": "Tuna with melted cheddar, rocket in a toasted brioche",
-          "price": "£9.95",
+          "name": "The Ultimate Fish Goujon ",
+          "description": "Chunky battered fish goujon, rocket in a toasted brioche",
+          "price": "£12.95",
           "tags": []
         },
         {
@@ -94,7 +94,7 @@
         {
           "name": "Vegan Roast Pepper & Pesto Ciabatta",
           "description": "Roasted red pepper with Vegan Cheese, Spinach & Vegan Basil Pesto in a Warm Ciabatta",
-          "price": "£9.25",
+          "price": "£10.95",
           "tags": [
             "VE"
           ]
