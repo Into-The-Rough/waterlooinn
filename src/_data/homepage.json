@@ -31,7 +31,7 @@
   },
   "food": {
     "title": "Hearty Food & Fine Ales",
-    "description": "Proper pub grub, cooked fresh. The kind of food you want after a day on the hills. Washed down with real ales and a glass of something nice.",
+    "description": "Proper pub grub, cooked fresh with Farm to table lamb from Longditch farm. The kind of food you want after a day on the hill washed down with real ales and a glass of something nice. ",
     "previewItems": [
       {
         "name": "Napoleon's Retreat",
@@ -39,14 +39,14 @@
         "price": "£15.95"
       },
       {
-        "name": "The Waterloo Toastie",
+        "name": "The Wholesome Hqm & Cheeser",
         "description": "Ham, mature cheddar & wholegrain mustard mayo on a bloomer",
-        "price": "£9.95"
+        "price": "£10.95"
       },
       {
         "name": "Beef & Blue Ciabatta",
         "description": "Derbyshire beef with rich gravy, Peak Blue & onion jam",
-        "price": "£10.95"
+        "price": "£12.95"
       }
     ]
   },
