@@ -2,52 +2,52 @@
   "categories": [
     {
       "name": "Waterloo Plates of the Day",
-      "subtitle": "Our meat is sourced from Redferns, Buxton. Lamb is farm to table direct from Longditch Farm",
+      "subtitle": "As a local pub we source responsibly and locally for our kitchen: Meat: Redfearns butchers Buxton, Lamb: Longditch Farm Leek, Veg: Tomsons Buxton, Fish: R.G Morris Buxton.",
       "items": [
         {
           "name": "The Waterloo Beef or Lamb Burger (GFA)",
-          "description": "Derbyshire Beef burger or Longditch Farm lamb burger sourced locally with cheddar, smoked bacon & onion jam served with beef dripping fries.",
-          "price": "£16.95",
+          "description": "Derbyshire Beef burger or Longditch Farm lamb burger sourced locally with cheddar, smoked bacon & onion jam served with baby gem, tomato, house slaw and hand-cut chips.",
+          "price": "£18.95",
           "tags": []
         },
         {
           "name": "Beer Battered Haddock and Chips (GFA)",
-          "description": "Fresh haddock fillet in Waterloo batter with beef dripping chips. Mushy peas and tartre sauce",
+          "description": "Fresh haddock fillet in Waterloo ale batter with hand cut chips. Mushy peas and tartre sauce",
           "price": "£17.50",
           "tags": null
         },
         {
           "name": "Derbyshire Rib Eye Steak (GF)",
-          "description": "8oz locally sourced ribeye steak with garlic butter fresh tomato, watercress and fries.",
-          "price": "£19.95",
+          "description": "8oz Redfearn's with flat cap mushrooms, roasted tomato, hand cut chips and a homemade onion ring",
+          "price": "£21.95",
           "tags": [
             "GF"
           ]
         },
         {
           "name": "Belly Pork (GF)",
-          "description": "Locally sourced. Served with mash, seasonal veg, a rhubard & port compote.",
-          "price": "£17.95",
+          "description": "Served with butternut squash puree, dirty mash and fresh cider jus",
+          "price": "£18.95",
           "tags": [
             "GF"
           ]
         },
         {
           "name": "Home made Derbyshire steak and ale pie",
-          "description": "A real winner ! A delicious slice of homemade pie. Local beef in rich ale gravy baked in a buttery shortcrust. Chips and greens,",
-          "price": "£17.95"
+          "description": "served with hand cut chips, salted butter peas and red cabbage,",
+          "price": "£17.50"
         },
         {
-          "name": "Homemade Cheese and Onion Pie (V)",
-          "description": "A delicious slice of Homemade mature cheddar and caramelised onion shortcrust pie. Chips and baked beans (or greens)",
-          "price": "£16.95",
+          "name": "Homemade Mature Cheddar and Onion Pie (V)",
+          "description": "served with hand cut chips and a pot of gravy",
+          "price": "£16.50",
           "tags": [
             "V"
           ]
         },
         {
-          "name": "Roast Butternut Squash Wellington",
-          "description": "Waterloo battle of roasted butternut squash, chips and seasonal veg.",
+          "name": "Roast Butternut Squash & Red Pepper Patties in puff pastry parcels ",
+          "description": "served on a bed of rocket with tomoato and basil pesto",
           "price": "£16.95",
           "tags": [
             "V"
@@ -147,44 +147,44 @@
       "subtitle": "",
       "items": [
         {
-          "name": "Triple Cooked Chips",
+          "name": "Hand cut chips",
           "description": "",
           "price": "£4.95",
           "tags": []
         },
         {
-          "name": "Halloumi Fries with Chilli Sauce",
+          "name": "Seasonal veg or house salad",
           "description": "",
-          "price": "£5.25",
+          "price": "£4.50",
           "tags": []
         },
         {
-          "name": "House Salad with Honey Mustard Dressing",
+          "name": "Cheesy chips",
           "description": "",
-          "price": "£4.25",
+          "price": "£5.00",
           "tags": [
             "VE"
           ]
         },
         {
-          "name": "Garlic Bread",
+          "name": "Onion rings",
           "description": "",
-          "price": "£3.50",
+          "price": "£4.50",
           "tags": [
             "V"
           ]
         },
         {
-          "name": "Fennel & Apple Slaw",
+          "name": "House Slaw",
           "description": "",
-          "price": "£3.50",
+          "price": "£2.50",
           "tags": [
             "VE",
             "GF"
           ]
         },
         {
-          "name": "Hartington Cheese Board with Chutney, Pickles & Crackers",
+          "name": "Hartington Cheese Board for one with Chutney, Pickles & Crackers",
           "description": "",
           "price": "£8.95",
           "tags": []
@@ -193,7 +193,7 @@
     },
     {
       "name": "Dessert Menu",
-      "subtitle": "All desserts £7.25",
+      "subtitle": "All desserts £7.95",
       "items": [
         {
           "name": "Sticky Toffee Pudding",
