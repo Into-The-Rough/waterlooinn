@@ -3,7 +3,7 @@
     "tagline": "Biggin, Derbyshire",
     "title": "The Waterloo Inn",
     "description": "More Than a Pub – The Heart of Biggin for Over 200 Years! A traditional Peak District pub with a rustic campsite, large beer garden and stunning panoramic countryside views.",
-    "image": "/images/hero-exterior-night.webp"
+    "image": "/images/exterior-day-beergarden.webp"
   },
   "about": {
     "title": "A Traditional Derbyshire Pub with a View",
@@ -61,6 +61,6 @@
       "Peak District routes on your doorstep",
       "Walking & cycling breaks"
     ],
-    "image": "/images/exterior-day-rear.webp"
+    "image": "/images/hero-exterior-night.webp"
   }
 }
