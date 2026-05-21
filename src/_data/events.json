@@ -2,15 +2,15 @@
   "title": "What's On",
   "items": [
     {
-      "name": "Sunday Roast",
-      "description": "Traditional roast dinner served every Sunday sittings 12pm, 12.30pm, 2pm or 2.30pm. Booking recommended.",
-      "day": "Every Sunday",
+      "name": "Big Skies Country & western acoustic duo",
+      "description": "lively acoustic country / folk rock/ americana covers. Great entertainment !",
+      "day": "Sunday 24th May 6-8pm.",
       "image": "/images/food-cottage-pie.webp"
     },
     {
       "name": "live music 🪕",
       "description": "Josh, lead singer from the Mighty Craic is coming to the Waterloo ! He will perform Irish hits, Celtic reels and pop covers as a duo with fiddler Bob. A Manchester based Irish and party band known for performing at events like the Cheltenham festival. See you for the craic!  ",
-      "day": " 23rd May 2026"
+      "day": " 23rd May 2026 8.30pm"
     }
   ]
 }
