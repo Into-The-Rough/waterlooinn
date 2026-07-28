@@ -6,6 +6,7 @@ module.exports = function (eleventyConfig) {
     eleventyConfig.addPassthroughCopy("src/admin");
     eleventyConfig.addPassthroughCopy("src/uploads");
     eleventyConfig.addPassthroughCopy({ "src/favicon.svg": "favicon.svg" });
+    eleventyConfig.addPassthroughCopy({ "src/_headers": "_headers" });
 
     // Current year filter for copyright
     eleventyConfig.addFilter("currentYear", function () {

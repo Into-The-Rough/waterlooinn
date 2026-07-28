@@ -1,8 +1,11 @@
 {
   "items": [
-    { "image": "/images/exterior-day-beergarden.webp", "alt": "The Waterloo Inn exterior with beer garden and picnic benches", "featured": true },
+    { "image": "/images/waterloo-summer-garden-pub.webp", "alt": "The Waterloo Inn beer garden and pub exterior on a sunny day", "featured": true },
+    { "image": "/images/waterloo-summer-beer-garden.webp", "alt": "Sunny beer garden at The Waterloo Inn with picnic benches and countryside views", "featured": false },
+    { "image": "/images/waterloo-campsite-motorhomes.webp", "alt": "Motorhomes pitched at The Waterloo Inn campsite on a sunny day", "featured": false },
+    { "image": "/images/exterior-day-beergarden.webp", "alt": "The Waterloo Inn exterior with beer garden and picnic benches", "featured": false },
     { "image": "/images/food-ciabatta.webp", "alt": "Freshly made ciabatta sandwich", "featured": false },
-    { "image": "/images/interior-bar.webp", "alt": "Traditional wooden bar", "featured": false },
+    { "image": "/images/interior-bar.webp", "alt": "Flowers and wine on a table inside The Waterloo Inn bar", "featured": false },
     { "image": "/images/interior-seating.webp", "alt": "Cosy pub seating area", "featured": false },
     { "image": "/images/food-cottage-pie.webp", "alt": "Home-cooked cottage pie", "featured": false },
     { "image": "/images/exterior-night-lantern.webp", "alt": "Bass lantern outside The Waterloo Inn at night", "featured": false },
