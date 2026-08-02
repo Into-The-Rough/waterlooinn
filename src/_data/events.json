@@ -1,4 +1,10 @@
 {
   "title": "What's On",
-  "items": []
+  "items": [
+    {
+      "name": "Live music ",
+      "description": "Big Skies country music duo back by popular demand Saturday 22nd August !",
+      "day": "Saturday 22nd August 8pm"
+    }
+  ]
 }
