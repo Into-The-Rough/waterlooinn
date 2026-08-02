@@ -1,11 +1,4 @@
 {
   "title": "What's On",
-  "items": [
-    {
-      "name": "World Cup !!",
-      "description": "England V Ghana ",
-      "day": "Pub open 7.30pm game starts at 9pm!",
-      "image": ""
-    }
-  ]
+  "items": []
 }
