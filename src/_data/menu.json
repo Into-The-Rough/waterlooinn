@@ -7,19 +7,19 @@
         {
           "name": "The Waterloo Beef Burger (GFA)",
           "description": "Derbyshire Beef burger sourced locally with cheddar, smoked bacon & onion jam served with baby gem, tomato, house slaw and hand-cut chips.",
-          "price": "£18.95",
+          "price": "£17.95",
           "tags": []
         },
         {
           "name": "Beer Battered Haddock and Chips (GFA)",
           "description": "Fresh haddock fillet in Waterloo ale batter with hand cut chips. Mushy peas and tartre sauce",
-          "price": "£17.50",
+          "price": "£17.95",
           "tags": null
         },
         {
           "name": "Derbyshire Rib Eye Steak (GF)",
           "description": "8oz Redfearn's with flat cap mushrooms, roasted tomato, hand cut chips and a homemade onion ring",
-          "price": "£21.95",
+          "price": "£22.95",
           "tags": [
             "GF"
           ]
