@@ -2,7 +2,7 @@
   "categories": [
     {
       "name": "Waterloo Plates of the Day",
-      "subtitle": "The new owners are truly committed to sourcing locally. This is to ensure only high quality, fully traceable ingredients are used in our dishes. As such are suppliers are as follows: Meat from Redfearns Butchers of Buxton. Vegetables: Tomsons of Buxton, Fish: RG Morris of Buxton, Other Items: Holdsworths of Derbyshire. We profess not to be the cheapest, that's because good quality ingredients cost more to produce and to buy. If you want cheap, tasteless meat cooked on mass in a microwave with an untraceable supply chain then don't come here !  Many of our dishes have gluten free available options (GFA)",
+      "subtitle": "The new owners are truly committed to sourcing locally. This is to ensure only high quality fully traceable ingredients are used in our dishes. As such our suppliers are as follows: Meat from Redfearns Butchers of Buxton. Vegetables: Tomsons of Buxton, Fish: RG Morris of Buxton, Other Items: Holdsworths of Derbyshire. We profess not to be the cheapest and that's because good quality ingredients cost more to produce and more to procure. We don't serve unsustainable tasteless meat that is 'cooked' on mass!  Instead we try to serve good quality food that is individually cooked with care. Many of our dishes are available as gluten free on request (GFA)",
       "items": [
         {
           "name": "The Waterloo Beef Burger (GFA)",
@@ -249,12 +249,6 @@
         {
           "name": "Boston Chocolate Brownie",
           "description": "A moist chocolate fudge brownie topped with loads of dark chocolate chips served with ice cream",
-          "price": "£7.25",
-          "tags": []
-        },
-        {
-          "name": "Parkin Ginger Cake",
-          "description": "Parkin is a gingerbread cake traditionally made with oatmeal and black treacle served with ice cream",
           "price": "£7.25",
           "tags": []
         },
