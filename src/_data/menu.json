@@ -2,7 +2,7 @@
   "categories": [
     {
       "name": "Waterloo Plates of the Day",
-      "subtitle": "As a local pub we source responsibly & locally for our kitchen. Meat M. Redfearns Butchers, Buxton. Veg: Tomsons Buxton, Fish: R.G Morris Buxton.",
+      "subtitle": "We source locally for our kitchen. Meat M. Redfearns Butchers, Buxton. Veg: Tomsons Buxton, Fish: R.G Morris Buxton, Fresh food: Holdsworths of Derbyshire.",
       "items": [
         {
           "name": "The Waterloo Beef Burger (GFA)",
@@ -46,12 +46,11 @@
           ]
         },
         {
-          "name": "House Pasta with toasted garlic ciabatta ",
+          "name": "House Pasta with toasted garlic ciabatta (GFA)",
           "description": "Cherry Tomato, Pesto & Parmesan penne, topped with rocket.. Vegan cheese available",
           "price": "£15.95",
           "tags": [
             "V",
-            "GF",
             "VE"
           ]
         },
@@ -61,61 +60,67 @@
           "price": "£17.95"
         },
         {
-          "name": "Farm to Fork: Derbyshire Ribeye Steak",
+          "name": "Farm to Fork: Derbyshire Ribeye Steak (GFA)",
           "description": "Beer Battered Onion Rings, Triple Cut Chips, Grilled flat mushroom, House Salad and Roasted Tomato",
           "price": "£22.95"
         },
         {
           "description": "Served with Triple Cut Chips, House Salad, Roasted Tomato and Grilled flat mushroom",
-          "name": "Farm to Fork: Garlic and Thyme Chicken",
+          "name": "Farm to Fork: Garlic and Thyme Chicken (GFA)",
           "price": "£18.95"
         },
         {
-          "name": "Farm to Fork: Cajun Butter Chicken ",
+          "name": "Farm to Fork: Cajun Butter Chicken (GFA)",
+          "description": "Served with Triple Cut Chips,  House Salad, Grilled flat mushroom and Roasted Tomato",
+          "price": "£18.95"
+        },
+        {
+          "name": "Farm to Fork: Gammon Egg & Peas",
           "description": "Served with Triple Cut Chips,  House Salad, Grilled flat mushroom and Roasted Tomato",
           "price": "£18.95"
         }
       ]
     },
     {
-      "name": "The Waterloo Melt House",
-      "subtitle": "Baked fresh to order",
+      "name": "House Burgers & Wraps",
+      "subtitle": "Our meat is sourced from Redferns butchers in Buxton.",
       "items": [
         {
-          "name": "Wholesome Ham & Cheese chomper",
-          "description": "Derbyshire ham, mature cheddar & wholegrain mustard mayo on a farmhouse bloomer",
-          "price": "£10.95",
+          "name": "Derbyshire Beef Burger (GFA)",
+          "description": "Topped with local Hartington Cheddar, Baby Gem Lettuce, Crinkled Gherkin, Salad, Fries, House Slaw.",
+          "price": "£17.95",
           "tags": []
         },
         {
-          "name": "Brie & Cranberry Ciabatta",
-          "description": "Peak brie, house cranberry chutney & rocket on a rustic ciabatta",
-          "price": "£10.95",
+          "name": "Cajan Chicken Burger (GFA)",
+          "description": "Topped with local Hartington Cheddar, Baby Gem Lettuce, Crinkled Gherkin, Salad, Fries, House Slaw. Gluten Free Bread Available",
+          "price": "£17.95",
+          "tags": null
+        },
+        {
+          "name": "Plant Based Bean Burger (GFA)",
+          "description": "Topped with Vegan Cheese,  Baby Gem Lettuce, Crinkled Gherkin, Salad, Fries, House Slaw. Gluten Free Bread Available",
+          "price": "£17.95",
           "tags": [
+            "VE",
             "V"
           ]
         },
         {
-          "name": "Beef & Blue Ciabatta",
-          "description": "Derbyshire Beef mixed with rich gravy, Peak Blue & onion jam on a toasted ciabatta",
-          "price": "£12.95",
+          "name": "Waterloo Crispy Chicken Wrap (available until 5pm)",
+          "description": "Breaded chicken with garlic mayonaise, and sweet baby gem lettuce. Served with side salad, house slaw and tortilla crisps.Delicious !",
+          "price": "£10.95",
           "tags": []
         },
         {
-          "name": "The Ultimate Fish Goujon ",
-          "description": "Chunky battered fish goujon, rocket in a toasted brioche",
-          "price": "£12.95",
+          "name": "The Ultimate Fish Goujon",
+          "description": "Garlic Mayonaise, baby gem lettuce. Served with side salad, house slaw and tortilla crisps.  ",
+          "price": "£10.95",
           "tags": []
         },
         {
-          "name": "The Waterloo Chip Butty",
-          "description": "Triple-cooked beef dripping chips, Peak cheddar & house onion gravy in a toasted brioche",
-          "price": "£8.95",
-          "tags": []
-        },
-        {
-          "name": "Vegan Roast Pepper & Pesto Ciabatta",
-          "description": "Roasted red pepper with Vegan Cheese, Spinach & Vegan Basil Pesto in a Warm Ciabatta",
+          "name": "Crispy Halloumi & Sweet Chilli Wrap",
+          "description": "Baby Gem lettuce, Served with side salad, house slaw and tortilla crisps.  ",
           "price": "£10.95",
           "tags": [
             "VE"
