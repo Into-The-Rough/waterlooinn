@@ -47,8 +47,8 @@
         },
         {
           "name": "Grilled Chicken Ceaser Salad",
-          "description": "Original caeser dressing, Parmesan, Garlic Croutons, Crispy Bacon, Baby Gem Lettuce",
-          "price": "£17.95. (No meat also available £15.95)",
+          "description": "Original caeser dressing, Parmesan, Garlic Croutons, Crispy Bacon, Baby Gem Lettuce. Vegetarian Available £15.95",
+          "price": "£17.95",
           "tags": [
             "V"
           ]
