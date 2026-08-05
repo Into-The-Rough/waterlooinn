@@ -17,18 +17,20 @@
           "tags": null
         },
         {
-          "name": "Derbyshire Rib Eye Steak (GF)",
-          "description": "8oz Redfearn's with flat cap mushrooms, roasted tomato, hand cut chips and a homemade onion ring",
-          "price": "£22.95",
-          "tags": [
-            "GF"
-          ]
-        },
-        {
           "name": "Homemade Derbyshire Beef Lasagna",
           "description": "Served with toasted garlic ciabatta and house salad. ",
           "price": "£18.95",
           "tags": null
+        },
+        {
+          "name": "Cherry Tomato & Pesto Penne Pasta Topped with Parmesan & Garlic Ciabatta ",
+          "description": "Vegan Cheese Available ",
+          "price": "£15.95",
+          "tags": [
+            "V",
+            "VE",
+            "GF"
+          ]
         },
         {
           "name": "Home made Derbyshire steak and ale pie",
@@ -55,6 +57,21 @@
           "name": "Whitby Scampi",
           "description": "Homemade tartre sauce, charred lemon, fries, house salad, garden peas. ",
           "price": "£17.95"
+        },
+        {
+          "name": "Farm to Fork: Derbyshire Ribeye Steak",
+          "description": "Beer Battered Onion Rings, Triple Cut Chips, Grilled flat mushroom, House Salad and Roasted Tomato",
+          "price": "£22.95"
+        },
+        {
+          "description": "Served with Triple Cut Chips, House Salad, Roasted Tomato and Grilled flat mushroom",
+          "name": "Farm to Fork: Garlic and Thyme Chicken",
+          "price": "£18.95"
+        },
+        {
+          "name": "Farm to Fork: Cajun Butter Chicken ",
+          "description": "Served with Triple Cut Chips,  House Salad, Grilled flat mushroom and Roasted Tomato",
+          "price": "£18.95"
         }
       ]
     },
