@@ -83,7 +83,7 @@
     },
     {
       "name": "House Burgers & Wraps",
-      "subtitle": "Our meat is sourced from Redferns butchers in Buxton.",
+      "subtitle": "Burgers available all day, wraps and ciabattas until 5pm. All our meat for our burgers is sourced from Redferns, Buxton.",
       "items": [
         {
           "name": "Derbyshire Beef Burger (GFA)",
@@ -107,19 +107,19 @@
           ]
         },
         {
-          "name": "Waterloo Crispy Chicken Wrap (available until 5pm)",
+          "name": "Waterloo Crispy Chicken Wrap ( until 5pm)",
           "description": "Breaded chicken with garlic mayonaise, and sweet baby gem lettuce. Served with side salad, house slaw and tortilla crisps.Delicious !",
           "price": "£10.95",
           "tags": []
         },
         {
-          "name": "The Ultimate Fish Goujon",
+          "name": "The Ultimate Fish Goujon (until 5pm)",
           "description": "Garlic Mayonaise, baby gem lettuce. Served with side salad, house slaw and tortilla crisps.  ",
           "price": "£10.95",
           "tags": []
         },
         {
-          "name": "Crispy Halloumi & Sweet Chilli Wrap",
+          "name": "Crispy Halloumi & Sweet Chilli Wrap (until 5pm)",
           "description": "Baby Gem lettuce, Served with side salad, house slaw and tortilla crisps.  ",
           "price": "£10.95",
           "tags": [
