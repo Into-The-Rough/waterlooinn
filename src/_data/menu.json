@@ -2,7 +2,7 @@
   "categories": [
     {
       "name": "Waterloo Plates of the Day",
-      "subtitle": "We source locally for our kitchen. Meat from Redfearns Butchers, Buxton. Veg: Tomsons Buxton, Fish: R.G Morris Buxton, Fresh food: Holdsworths of Derbyshire. May of our dishes have gluten free available options (GFA)",
+      "subtitle": "The new owners are truly committed to sourcing locally to ensure only the best quality ingredients are used in our dishes. As such are suppliers are as follows: Meat from Redfearns Butchers of Buxton. Vegetables: Tomsons of Buxton, Fish: RG Morris of Buxton, Other Items: Holdsworths of Derbyshire. May of our dishes have gluten free available options (GFA)",
       "items": [
         {
           "name": "The Waterloo Beef Burger (GFA)",
@@ -83,7 +83,7 @@
     },
     {
       "name": "House Burgers & Wraps",
-      "subtitle": "Burgers available all day, wraps and ciabattas until 5pm. All our meat for our burgers is sourced from Redferns, Buxton.",
+      "subtitle": "Burgers available all day, wraps and ciabattas until 5pm. All meat for our burgers is sourced locally.",
       "items": [
         {
           "name": "Derbyshire Beef Burger (GFA)",
@@ -197,7 +197,7 @@
           ]
         },
         {
-          "name": "Local Beer Battered Onion rings (using a Waterloo Ale)",
+          "name": "Local Beer Battered Onion rings ( Waterloo Ale)",
           "description": "",
           "price": "£5.00",
           "tags": [
