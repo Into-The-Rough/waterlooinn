@@ -173,32 +173,33 @@
     },
     {
       "name": "Sides & Extras",
-      "subtitle": "",
+      "subtitle": "Please note many of our sides and extras can be served gluten free on request (GFA)",
       "items": [
         {
-          "name": "Hand cut chips",
-          "description": "",
-          "price": "£4.95",
+          "name": "Handcut Cut Chips (GFA)",
+          "description": "Triple Cut or Skin On.",
+          "price": "£5.00",
           "tags": []
         },
         {
-          "name": "Seasonal veg or house salad",
+          "name": "Loaded Fries (GFA)",
+          "description": "Choose from Hartington Cheddar, BBQ & Crispy Onion, Truffle & Parmesan, Cajan. Delicious !",
+          "price": "£5.50 - £6",
+          "tags": []
+        },
+        {
+          "name": "House salad side",
           "description": "",
           "price": "£4.50",
-          "tags": []
-        },
-        {
-          "name": "Cheesy chips",
-          "description": "",
-          "price": "£5.00",
           "tags": [
-            "VE"
+            "VE",
+            "GF"
           ]
         },
         {
-          "name": "Onion rings",
+          "name": "Local Beer Battered Onion rings (using a Waterloo Ale)",
           "description": "",
-          "price": "£4.50",
+          "price": "£5.00",
           "tags": [
             "V"
           ]
@@ -206,7 +207,7 @@
         {
           "name": "House Slaw",
           "description": "",
-          "price": "£2.50",
+          "price": "£3.50",
           "tags": [
             "VE",
             "GF"
