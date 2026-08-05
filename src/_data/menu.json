@@ -23,9 +23,9 @@
           "tags": null
         },
         {
-          "name": "Cherry Tomato & Pesto Penne Pasta Topped with Parmesan & Garlic Ciabatta ",
-          "description": "Vegan Cheese Available ",
-          "price": "£15.95",
+          "name": "Grilled Chicken Ceaser Salad",
+          "description": "Original caeser dressing, Parmesan, Garlic Croutons, Crispy Bacon, Baby Gem Lettuce. Vegetarian Available £15.95",
+          "price": "£17.95 /£15.95",
           "tags": [
             "V",
             "VE",
@@ -46,11 +46,13 @@
           ]
         },
         {
-          "name": "Grilled Chicken Ceaser Salad",
-          "description": "Original caeser dressing, Parmesan, Garlic Croutons, Crispy Bacon, Baby Gem Lettuce. Vegetarian Available £15.95",
-          "price": "£17.95",
+          "name": "House Pasta with toasted garlic ciabatta ",
+          "description": "Cherry Tomato, Pesto & Parmesan penne, topped with rocket.. Vegan cheese available",
+          "price": "£15.95",
           "tags": [
-            "V"
+            "V",
+            "GF",
+            "VE"
           ]
         },
         {
