@@ -25,33 +25,36 @@
           ]
         },
         {
-          "name": "Belly Pork (GF)",
-          "description": "Served with butternut squash puree, dirty mash and fresh cider jus",
+          "name": "Homemade Derbyshire Beef Lasagna",
+          "description": "Served with toasted garlic ciabatta and house salad. ",
           "price": "£18.95",
-          "tags": [
-            "GF"
-          ]
+          "tags": null
         },
         {
           "name": "Home made Derbyshire steak and ale pie",
           "description": "served with hand cut chips, salted butter peas and red cabbage,",
-          "price": "£17.50"
+          "price": "£17.95"
         },
         {
-          "name": "Homemade Mature Cheddar and Onion Pie (V)",
-          "description": "served with hand cut chips and a pot of gravy",
-          "price": "£16.50",
-          "tags": [
-            "V"
-          ]
-        },
-        {
-          "name": "Roast Butternut Squash & Red Pepper Patties in puff pastry parcels ",
-          "description": "served on a bed of rocket with tomoato and basil pesto",
+          "name": "Mature Cheddar and Onion Pie (V)",
+          "description": "served with house chips, beans and seasonal veg",
           "price": "£16.95",
           "tags": [
             "V"
           ]
+        },
+        {
+          "name": "Grilled Chicken Ceaser Salad",
+          "description": "Original caeser dressing, Parmesan, Garlic Croutons, Crispy Bacon, Baby Gem Lettuce",
+          "price": "£17.95. (No meat also available £15.95)",
+          "tags": [
+            "V"
+          ]
+        },
+        {
+          "name": "Whitby Scampi",
+          "description": "Homemade tartre sauce, charred lemon, fries, house salad, garden peas. ",
+          "price": "£17.95"
         }
       ]
     },
