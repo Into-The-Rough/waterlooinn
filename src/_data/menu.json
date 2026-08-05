@@ -2,7 +2,7 @@
   "categories": [
     {
       "name": "Waterloo Plates of the Day",
-      "subtitle": "We source locally for our kitchen. Meat M. Redfearns Butchers, Buxton. Veg: Tomsons Buxton, Fish: R.G Morris Buxton, Fresh food: Holdsworths of Derbyshire.",
+      "subtitle": "We source locally for our kitchen. Meat from Redfearns Butchers, Buxton. Veg: Tomsons Buxton, Fish: R.G Morris Buxton, Fresh food: Holdsworths of Derbyshire. May of our dishes have gluten free available options (GFA)",
       "items": [
         {
           "name": "The Waterloo Beef Burger (GFA)",
@@ -75,7 +75,7 @@
           "price": "£18.95"
         },
         {
-          "name": "Farm to Fork: Gammon Egg & Peas",
+          "name": "Farm to Fork: Gammon Egg & Peas (GFA)",
           "description": "Served with Triple Cut Chips,  House Salad, Grilled flat mushroom and Roasted Tomato",
           "price": "£18.95"
         }
@@ -129,42 +129,44 @@
       ]
     },
     {
-      "name": "Starters",
+      "name": "Starters / Small Plates",
       "subtitle": "",
       "items": [
         {
-          "name": "Waterloo Corn Ribs (VE/GF)",
-          "description": "Delicious bitesize cornribs fried crisp and dusted with our Waterloo seasoning served with chilli dip. Great as a starter or on their own a a nibble !",
-          "price": "£7.25",
+          "name": "Soup of the Day ",
+          "description": "Homemade soup served with toasted warm ciabatta bread, Can also be gluten free on request.",
+          "price": "£7.95",
           "tags": [
             "GF",
             "VE"
           ]
         },
         {
-          "name": "Venison Pate",
-          "description": "Served with sourdough bread, dressed mixed leaves and onion chutney",
+          "name": "Garlic Mushrooms & Parmesan Crumb",
+          "description": "Served with a arm toasted Ciabatta ",
+          "price": "£7.95",
+          "tags": [
+            "GF"
+          ]
+        },
+        {
+          "name": "Crispy Halloumi Fries",
+          "description": "Balsamic Rocket Salad, Sweet Chilli Sauce ",
           "price": "£7.95",
           "tags": []
         },
         {
-          "name": "Crispy Whitebait",
-          "description": "Lightly floured whitebait fried until golden served with lemon mayo and charred lemon",
-          "price": "£6.95",
-          "tags": []
-        },
-        {
-          "name": "Baked Feta with Honey (V)",
-          "description": "Warm feta drizzled with honey served with pita bread to dip. Delicious as a starter or just to nibble !",
-          "price": "£7.95",
+          "name": "Breaded Brie",
+          "description": "Napoli Tomato Sauce, Parmesan, Parsley ",
+          "price": "£8.95",
           "tags": [
             "V"
           ]
         },
         {
-          "name": "Extra topping",
-          "description": "",
-          "price": "£2.00",
+          "name": "Waterloo Tortilla Nachos",
+          "description": "Homemade Cajun Cheese sauce, Longley Farm Sourced Cream, Tomato Salsa. To Share or Individual",
+          "price": "£8.95 / £12.95",
           "tags": []
         }
       ]
