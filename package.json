@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "eleventy --serve",
-    "build": "eleventy"
+    "dev:bookings": "npm run build && node --disable-warning=ExperimentalWarning scripts/booking-dev-server.js",
+    "build": "eleventy",
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",

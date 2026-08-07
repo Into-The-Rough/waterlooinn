@@ -1,0 +1,71 @@
+---
+layout: false
+activeNav: booking
+subpage: true
+headerFixed: true
+permalink: /book/
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book a Table | {{ site.name }}, Biggin</title>
+    <meta name="description" content="Book a table for 1–8 guests at The Waterloo Inn in Biggin, Derbyshire. Choose an available time and receive instant confirmation.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <meta name="robots" content="index,follow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    {% include "header.njk" %}
+
+    <section class="page-hero booking-page-hero" style="background-image: url('/images/interior-bar.webp');">
+        <div class="page-hero-content">
+            <div class="divider centered light">
+                <span class="divider-line"></span>
+                <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                <span class="divider-line"></span>
+            </div>
+            <h1>Book a Table</h1>
+            <p>Instantly reserve a table for up to eight guests</p>
+        </div>
+    </section>
+
+    <main class="booking-page">
+        <div class="container booking-page-grid">
+            <section class="booking-card" aria-labelledby="booking-heading">
+                <div class="booking-card-intro">
+                    <p class="eyebrow">Your visit</p>
+                    <h2 id="booking-heading">Find an available table</h2>
+                    <p>Choose your preferred date and we’ll show you the times currently available.</p>
+                </div>
+                {% include "booking-form.njk" %}
+            </section>
+
+            <aside class="booking-sidebar">
+                <div class="booking-sidebar-card">
+                    <h2>Good to know</h2>
+                    <ul>
+                        <li>Bookings are confirmed instantly</li>
+                        <li>Tables are reserved for two hours</li>
+                        <li>Groups of 1–8 can book online</li>
+                        <li>Dogs are welcome</li>
+                    </ul>
+                </div>
+                <div class="booking-sidebar-card">
+                    <h2>Prefer to call?</h2>
+                    <p>For larger groups or anything unusual, speak to the team directly.</p>
+                    <a href="tel:{{ site.phone }}" class="booking-phone-link">{{ site.phone }}</a>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    {% include "footer.njk" %}
+    <script src="/js/main.js" defer></script>
+    <script src="/js/booking.js" defer></script>
+</body>
+</html>
