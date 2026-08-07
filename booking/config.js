@@ -12,6 +12,14 @@ const BOOKING_CONFIG = Object.freeze({
     tableHoldMinutes: 15,
     reminderLeadHours: 24,
     largePartySize: 7,
+    manageTokenGraceHours: 24,
+    verificationHoldMinutes: 15,
+    retention: {
+        emailDays: 30,
+        cancelledDays: 90,
+        waitlistDays: 90,
+        customerDays: 365
+    },
     areas: ["Restaurant", "Bar", "Outside"],
     serviceHours: {
         0: { start: "12:00", end: "19:00", label: "Sunday" },
@@ -25,8 +33,15 @@ const BOOKING_CONFIG = Object.freeze({
 });
 
 function isIsoDate(value) {
-    return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) &&
-        !Number.isNaN(Date.parse(`${value}T12:00:00Z`));
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
+    if (!match) return false;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const parsed = new Date(Date.UTC(year, month - 1, day, 12));
+    return parsed.getUTCFullYear() === year &&
+        parsed.getUTCMonth() === month - 1 &&
+        parsed.getUTCDate() === day;
 }
 
 function timeToMinutes(value) {

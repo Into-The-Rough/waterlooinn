@@ -1,0 +1,28 @@
+---
+layout: false
+permalink: /admin/bookings/login/
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Diary Sign In | {{ site.name }}</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/css/booking-admin.css">
+</head>
+<body class="admin-login-page">
+    <main class="admin-login-shell">
+        <form class="admin-login-card" data-admin-login>
+            <p class="admin-eyebrow">The Waterloo Inn</p>
+            <h1>Booking diary sign in</h1>
+            <p>Enter the booking-admin password configured on the server.</p>
+            <label>Password<input type="password" name="password" minlength="12" autocomplete="current-password" required></label>
+            <div class="admin-login-error" role="alert" hidden></div>
+            <button type="submit" class="admin-button">Sign in</button>
+        </form>
+    </main>
+    <script src="/js/booking-admin-login.js" defer></script>
+</body>
+</html>

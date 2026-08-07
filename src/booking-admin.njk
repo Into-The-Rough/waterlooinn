@@ -23,8 +23,9 @@ permalink: /admin/bookings/
     <header class="admin-header">
         <a href="/" class="admin-logo">The Waterloo <span>Inn</span></a>
         <div class="admin-header-actions">
-            <span class="admin-local-badge">Local prototype</span>
+            <span class="admin-local-badge" data-admin-actor>Authenticated admin</span>
             <a href="/admin/" class="admin-content-link">Website content</a>
+            <button type="button" class="admin-content-link admin-logout" data-admin-logout>Sign out</button>
         </div>
     </header>
 
@@ -110,12 +111,14 @@ permalink: /admin/bookings/
                         <span class="sr-only">Filter by status</span>
                         <select data-status-filter>
                             <option value="">All statuses</option>
+                            <option value="pending">Awaiting email</option>
                             <option value="confirmed">Confirmed</option>
                             <option value="arrived">Arrived</option>
                             <option value="seated">Seated</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                             <option value="no_show">No-show</option>
+                            <option value="expired">Expired</option>
                         </select>
                     </label>
                     <button type="button" class="admin-button admin-button-secondary" data-clear-filters>Clear filters</button>

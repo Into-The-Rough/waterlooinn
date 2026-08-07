@@ -2,9 +2,10 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const { BookingStore } = require("../booking/store");
 const { EmailService } = require("../booking/email-service");
-const { BookingService, tokenHash } = require("../booking/service");
+const { BookingService } = require("../booking/service");
 
 function createFixture(options = {}) {
     const store = new BookingStore(":memory:");
@@ -14,15 +15,35 @@ function createFixture(options = {}) {
         staffEmail: "pub@example.com"
     });
     const service = new BookingService(store, mailer, {
-        now: options.now || (() => new Date("2026-07-28T10:00:00Z"))
+        now: options.now || (() => new Date("2026-07-28T10:00:00Z")),
+        requireEmailVerification: options.requireEmailVerification ?? false
     });
+    const manageTokens = new Map();
+    for (const method of ["sendBookingEmails", "sendAmendmentEmails", "sendReminderEmail"]) {
+        const original = mailer[method].bind(mailer);
+        mailer[method] = (booking, token) => {
+            manageTokens.set(booking.id, token);
+            return original(booking, token);
+        };
+    }
+    const originalCreateBooking = service.createBooking.bind(service);
+    service.createBooking = (input, createOptions = {}) => originalCreateBooking(input, {
+        ...createOptions,
+        idempotencyKey: createOptions.admin
+            ? (createOptions.idempotencyKey || null)
+            : (createOptions.idempotencyKey || crypto.randomUUID())
+    });
+    const originalCreateWaitlist = service.createWaitlistEntry.bind(service);
+    service.createWaitlistEntry = (input, createOptions = {}) => originalCreateWaitlist(input, {
+        ...createOptions,
+        idempotencyKey: createOptions.idempotencyKey || crypto.randomUUID()
+    });
+    store.testManageTokens = manageTokens;
     return { store, mailer, service };
 }
 
 function manageTokenFor(store, bookingId) {
-    const email = store.listEmailsForBooking(bookingId)
-        .find((item) => item.kind === "customer_confirmation");
-    return store.getEmail(email.id).html.match(/manage\/\?token=([A-Za-z0-9_-]+)/)[1];
+    return store.testManageTokens.get(bookingId);
 }
 
 function bookingInput(overrides = {}) {
@@ -245,23 +266,22 @@ test("due reminders are prepared once with confirmation and cancellation links",
     assert.doesNotMatch(html, /deposit/i);
 });
 
-test("pre-existing manage links remain valid when a reminder adds a stable link", async (t) => {
+test("reminders rotate manage tokens and stored previews redact the bearer", async (t) => {
     const { store, service } = createFixture();
     t.after(() => store.close());
 
     const result = await service.createBooking(bookingInput());
-    store.updateBooking(result.booking.id, {
-        cancellation_token_hash: tokenHash("legacy-local-token"),
-        stable_manage_token_hash: null
-    });
+    const originalToken = manageTokenFor(store, result.booking.id);
     await service.sendReminderForBooking(result.booking.id, { force: true });
 
-    assert.equal(service.getManagedBooking("legacy-local-token").booking.id, result.booking.id);
+    assert.throws(() => service.getManagedBooking(originalToken), /invalid or has expired/);
+    const rotatedToken = manageTokenFor(store, result.booking.id);
+    assert.equal(service.exchangeManageToken(rotatedToken).bookingId, result.booking.id);
     const reminder = store.listEmailsForBooking(result.booking.id)
         .find((email) => email.kind === "customer_reminder");
-    const stableToken = store.getEmail(reminder.id).html
-        .match(/manage\/\?token=([A-Za-z0-9_-]+)/)[1];
-    assert.equal(service.getManagedBooking(stableToken).booking.id, result.booking.id);
+    const storedHtml = store.getEmail(reminder.id).html;
+    assert.doesNotMatch(storedHtml, new RegExp(rotatedToken));
+    assert.match(storedHtml, /#token=redacted/);
 });
 
 test("a cancellation offers released capacity to the earliest waiting guest", async (t) => {
@@ -325,4 +345,165 @@ test("diary includes attention counts and contact-based guest history", async (t
     assert.equal(diary.attention.largeParty, 1);
     assert.equal(diary.attention.specialRequest, 2);
     assert.equal(diary.attention.depositPending, undefined);
+});
+
+test("rejects impossible ISO calendar dates", (t) => {
+    const { store, service } = createFixture();
+    t.after(() => store.close());
+    assert.throws(() => service.getAvailability("2026-09-31", 2), /valid date/);
+    assert.throws(() => service.getAvailability("2026-02-29", 2), /valid date/);
+});
+
+test("customer management response excludes administrative and contact fields", async (t) => {
+    const { store, service } = createFixture();
+    t.after(() => store.close());
+    const result = await service.createBooking(bookingInput());
+    await service.updateBooking(result.booking.id, { internalNotes: "Private staff note" }, {
+        actor: "Test manager",
+        requestId: "request-1"
+    });
+    const managed = service.getManagedBooking(manageTokenFor(store, result.booking.id));
+    assert.equal(Object.hasOwn(managed.booking, "internalNotes"), false);
+    assert.equal(Object.hasOwn(managed.booking, "email"), false);
+    assert.equal(Object.hasOwn(managed.booking, "phone"), false);
+    assert.equal(Object.hasOwn(managed.booking, "id"), false);
+    const events = store.listBookingEvents(result.booking.id);
+    assert.equal(events[0].actor, "Test manager");
+    assert.equal(events[0].kind, "booking_details_changed");
+});
+
+test("booking creation is idempotent and does not duplicate email", async (t) => {
+    const { store, service } = createFixture();
+    t.after(() => store.close());
+    const key = "same-request-identifier-001";
+    const first = await service.createBooking(bookingInput(), { idempotencyKey: key });
+    const second = await service.createBooking(bookingInput(), { idempotencyKey: key });
+    assert.equal(second.replayed, true);
+    assert.equal(second.booking.id, first.booking.id);
+    assert.equal(store.listBookings("2026-07-29").length, 1);
+    assert.equal(store.listEmailsForBooking(first.booking.id).length, 2);
+});
+
+test("concurrent reminder attempts claim delivery once", async (t) => {
+    const { store, service, mailer } = createFixture();
+    t.after(() => store.close());
+    const result = await service.createBooking(bookingInput());
+    let deliveries = 0;
+    mailer.sendReminderEmail = async () => {
+        await new Promise((resolve) => setTimeout(resolve, 15));
+        deliveries += 1;
+        return { status: "sent" };
+    };
+    const reminders = await Promise.all([
+        service.sendReminderForBooking(result.booking.id),
+        service.sendReminderForBooking(result.booking.id)
+    ]);
+    assert.equal(deliveries, 1);
+    assert.equal(reminders.filter((item) => item.prepared).length, 1);
+});
+
+test("production-style bookings hold capacity until email confirmation", async (t) => {
+    const { store, service } = createFixture({ requireEmailVerification: true });
+    t.after(() => store.close());
+    const result = await service.createBooking(bookingInput());
+    assert.equal(result.booking.status, "pending");
+    assert.ok(result.booking.holdExpiresAt);
+    const confirmed = service.confirmBooking(manageTokenFor(store, result.booking.id));
+    assert.equal(confirmed.booking.status, "confirmed");
+    assert.equal(confirmed.canConfirm, false);
+});
+
+test("manage tokens expire after the booking grace period", async (t) => {
+    let now = new Date("2026-07-28T10:00:00Z");
+    const { store, service } = createFixture({ now: () => now });
+    t.after(() => store.close());
+    const result = await service.createBooking(bookingInput());
+    const token = manageTokenFor(store, result.booking.id);
+    now = new Date("2026-07-31T13:00:00Z");
+    assert.throws(() => service.getManagedBooking(token), /invalid or has expired/);
+});
+
+test("failed replacement email keeps the previous manage token usable", async (t) => {
+    const { store, service, mailer } = createFixture();
+    t.after(() => store.close());
+    const result = await service.createBooking(bookingInput());
+    const originalToken = manageTokenFor(store, result.booking.id);
+    mailer.sendReminderEmail = async () => ({ status: "failed", error: "provider unavailable" });
+
+    const reminder = await service.sendReminderForBooking(result.booking.id, { force: true });
+
+    assert.equal(reminder.prepared, false);
+    assert.equal(service.exchangeManageToken(originalToken).bookingId, result.booking.id);
+});
+
+test("expired verification holds disappear from admin capacity summaries", async (t) => {
+    let now = new Date("2026-07-28T10:00:00Z");
+    const { store, service } = createFixture({
+        now: () => now,
+        requireEmailVerification: true
+    });
+    t.after(() => store.close());
+    const result = await service.createBooking(bookingInput());
+    const token = manageTokenFor(store, result.booking.id);
+    now = new Date("2026-07-28T10:16:00Z");
+
+    const diary = service.listDiary("2026-07-29");
+
+    assert.equal(diary.bookings[0].status, "expired");
+    assert.equal(diary.summary.bookingCount, 0);
+    assert.equal(diary.summary.covers, 0);
+    assert.throws(() => service.exchangeManageToken(token), /invalid or has expired/);
+});
+
+test("waiting-list creation is idempotent", async (t) => {
+    const { store, service } = createFixture();
+    t.after(() => store.close());
+    await service.createBooking(bookingInput({ partySize: 8, email: "one@example.com" }));
+    await service.createBooking(bookingInput({ partySize: 8, email: "two@example.com" }));
+    await service.createBooking(bookingInput({ partySize: 4, email: "three@example.com" }));
+    const input = {
+        date: "2026-07-29",
+        time: "12:00",
+        partySize: 2,
+        name: "Waiting Guest",
+        email: "waiting@example.com",
+        phone: "07111111111"
+    };
+    const key = "same-waitlist-request-001";
+
+    const first = await service.createWaitlistEntry(input, { idempotencyKey: key });
+    const emailCount = store.listWaitlistEmails(first.entry.id).length;
+    const second = await service.createWaitlistEntry(input, { idempotencyKey: key });
+
+    assert.equal(second.replayed, true);
+    assert.equal(second.entry.id, first.entry.id);
+    assert.equal(store.listWaitlist("2026-07-29").length, 1);
+    assert.equal(store.listWaitlistEmails(first.entry.id).length, emailCount);
+});
+
+test("durable rate limits and retention remove stale personal data", async (t) => {
+    let now = new Date("2026-07-28T10:00:00Z");
+    const { store, service } = createFixture({ now: () => now });
+    t.after(() => store.close());
+    assert.equal(store.consumeRateLimit({
+        id: crypto.randomUUID(), key: "source", action: "book", now: 1000, windowMs: 1000, limit: 2
+    }), true);
+    assert.equal(store.consumeRateLimit({
+        id: crypto.randomUUID(), key: "source", action: "book", now: 1001, windowMs: 1000, limit: 2
+    }), true);
+    assert.equal(store.consumeRateLimit({
+        id: crypto.randomUUID(), key: "source", action: "book", now: 1002, windowMs: 1000, limit: 2
+    }), false);
+
+    const result = await service.createBooking(bookingInput());
+    now = new Date("2028-01-01T10:00:00Z");
+    const retained = service.runRetention();
+    const booking = store.getBooking(result.booking.id);
+
+    assert.ok(retained.bookingEmails >= 2);
+    assert.equal(booking.guest_name, "Deleted guest");
+    assert.equal(booking.email, null);
+    assert.equal(booking.phone, null);
+    assert.equal(booking.requests, "");
+    assert.equal(store.listEmailsForBooking(result.booking.id).length, 0);
 });

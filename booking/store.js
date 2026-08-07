@@ -7,10 +7,16 @@ const { DatabaseSync } = require("node:sqlite");
 class BookingStore {
     constructor(databasePath) {
         if (databasePath !== ":memory:") {
-            fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+            fs.mkdirSync(path.dirname(databasePath), { recursive: true, mode: 0o700 });
+            fs.chmodSync(path.dirname(databasePath), 0o700);
         }
         this.db = new DatabaseSync(databasePath);
         this.db.exec("PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;");
+        if (databasePath !== ":memory:") {
+            for (const candidate of [databasePath, `${databasePath}-wal`, `${databasePath}-shm`]) {
+                if (fs.existsSync(candidate)) fs.chmodSync(candidate, 0o600);
+            }
+        }
         this.migrate();
     }
 
@@ -32,6 +38,8 @@ class BookingStore {
                 status TEXT NOT NULL DEFAULT 'confirmed',
                 cancellation_token_hash TEXT UNIQUE,
                 stable_manage_token_hash TEXT UNIQUE,
+                manage_token_expires_at TEXT,
+                idempotency_key TEXT UNIQUE,
                 email_status TEXT NOT NULL DEFAULT 'pending',
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
@@ -39,6 +47,8 @@ class BookingStore {
                 call_confirmed_at TEXT,
                 customer_confirmed_at TEXT,
                 reminder_sent_at TEXT,
+                reminder_claimed_at TEXT,
+                hold_expires_at TEXT,
                 area TEXT NOT NULL DEFAULT 'Restaurant',
                 table_label TEXT NOT NULL DEFAULT '',
                 deposit_amount_pence INTEGER NOT NULL DEFAULT 0,
@@ -106,7 +116,9 @@ class BookingStore {
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
                 notified_at TEXT,
-                booked_at TEXT
+                booked_at TEXT,
+                idempotency_key TEXT UNIQUE,
+                notification_claimed_at TEXT
             );
 
             CREATE INDEX IF NOT EXISTS idx_waitlist_date
@@ -128,6 +140,32 @@ class BookingStore {
 
             CREATE INDEX IF NOT EXISTS idx_waitlist_emails_entry
                 ON waitlist_emails (waitlist_id, created_at);
+
+            CREATE TABLE IF NOT EXISTS rate_limit_events (
+                id TEXT PRIMARY KEY,
+                rate_key TEXT NOT NULL,
+                action TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_rate_limit_lookup
+                ON rate_limit_events (rate_key, action, created_at);
+
+            CREATE TABLE IF NOT EXISTS admin_events (
+                id TEXT PRIMARY KEY,
+                actor TEXT NOT NULL,
+                action TEXT NOT NULL,
+                target_type TEXT NOT NULL,
+                target_id TEXT,
+                details TEXT NOT NULL DEFAULT '',
+                request_id TEXT,
+                created_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS app_meta (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
         `);
 
         const bookingColumns = new Set(
@@ -138,11 +176,15 @@ class BookingStore {
             customer_confirmed_at: "TEXT",
             reminder_sent_at: "TEXT",
             stable_manage_token_hash: "TEXT",
+            manage_token_expires_at: "TEXT",
+            idempotency_key: "TEXT",
             area: "TEXT NOT NULL DEFAULT 'Restaurant'",
             table_label: "TEXT NOT NULL DEFAULT ''",
             deposit_amount_pence: "INTEGER NOT NULL DEFAULT 0",
             deposit_status: "TEXT NOT NULL DEFAULT 'not_required'",
-            deposit_paid_at: "TEXT"
+            deposit_paid_at: "TEXT",
+            reminder_claimed_at: "TEXT",
+            hold_expires_at: "TEXT"
         };
         for (const [column, definition] of Object.entries(bookingMigrations)) {
             if (!bookingColumns.has(column)) {
@@ -155,6 +197,34 @@ class BookingStore {
         );
         if (!eventColumns.has("details")) {
             this.db.exec("ALTER TABLE booking_events ADD COLUMN details TEXT NOT NULL DEFAULT ''");
+        }
+
+        const waitlistColumns = new Set(
+            this.db.prepare("PRAGMA table_info(waitlist_entries)").all().map((column) => column.name)
+        );
+        if (!waitlistColumns.has("idempotency_key")) {
+            this.db.exec("ALTER TABLE waitlist_entries ADD COLUMN idempotency_key TEXT");
+        }
+        if (!waitlistColumns.has("notification_claimed_at")) {
+            this.db.exec("ALTER TABLE waitlist_entries ADD COLUMN notification_claimed_at TEXT");
+        }
+        this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_bookings_idempotency ON bookings (idempotency_key) WHERE idempotency_key IS NOT NULL");
+        this.db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_waitlist_idempotency ON waitlist_entries (idempotency_key) WHERE idempotency_key IS NOT NULL");
+
+        const tokenVersion = this.db.prepare("SELECT value FROM app_meta WHERE key = ?").get("manage_token_version");
+        if (!tokenVersion || tokenVersion.value !== "2") {
+            this.db.exec(`
+                UPDATE bookings
+                SET cancellation_token_hash = NULL,
+                    stable_manage_token_hash = NULL,
+                    manage_token_expires_at = NULL;
+                UPDATE booking_emails
+                SET html = '<p>This legacy email preview was removed during the booking security upgrade.</p>';
+            `);
+            this.db.prepare(`
+                INSERT INTO app_meta (key, value) VALUES (?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+            `).run("manage_token_version", "2");
         }
 
         this.db.prepare(`
@@ -186,17 +256,19 @@ class BookingStore {
                 id, reference, booking_date, booking_time, duration_minutes,
                 party_size, guest_name, email, phone, requests, internal_notes,
                 source, status, cancellation_token_hash, email_status,
-                stable_manage_token_hash,
+                stable_manage_token_hash, manage_token_expires_at, idempotency_key,
                 created_at, updated_at, cancelled_at, call_confirmed_at,
-                customer_confirmed_at, reminder_sent_at, area, table_label,
+                customer_confirmed_at, reminder_sent_at, reminder_claimed_at,
+                hold_expires_at, area, table_label,
                 deposit_amount_pence, deposit_status, deposit_paid_at
             ) VALUES (
                 $id, $reference, $booking_date, $booking_time, $duration_minutes,
                 $party_size, $guest_name, $email, $phone, $requests, $internal_notes,
                 $source, $status, $cancellation_token_hash, $email_status,
-                $stable_manage_token_hash,
+                $stable_manage_token_hash, $manage_token_expires_at, $idempotency_key,
                 $created_at, $updated_at, $cancelled_at, $call_confirmed_at,
-                $customer_confirmed_at, $reminder_sent_at, $area, $table_label,
+                $customer_confirmed_at, $reminder_sent_at, $reminder_claimed_at,
+                $hold_expires_at, $area, $table_label,
                 $deposit_amount_pence, $deposit_status, $deposit_paid_at
             )
         `).run(booking);
@@ -213,6 +285,11 @@ class BookingStore {
         ).get(tokenHash, tokenHash) || null;
     }
 
+    getBookingByIdempotencyKey(key) {
+        if (!key) return null;
+        return this.db.prepare("SELECT * FROM bookings WHERE idempotency_key = ?").get(key) || null;
+    }
+
     listBookings(date) {
         return this.db.prepare(`
             SELECT * FROM bookings
@@ -221,14 +298,25 @@ class BookingStore {
         `).all(date);
     }
 
-    listActiveBookings(date, excludeId = "") {
+    listActiveBookings(date, excludeId = "", nowIso = new Date().toISOString()) {
         return this.db.prepare(`
             SELECT * FROM bookings
             WHERE booking_date = ?
-              AND status IN ('confirmed', 'arrived', 'seated')
+              AND status IN ('pending', 'confirmed', 'arrived', 'seated')
+              AND (status <> 'pending' OR hold_expires_at > ?)
               AND id <> ?
             ORDER BY booking_time ASC
-        `).all(date, excludeId);
+        `).all(date, nowIso, excludeId);
+    }
+
+    expirePendingHolds(nowIso) {
+        return this.db.prepare(`
+            UPDATE bookings
+            SET status = 'expired', cancellation_token_hash = NULL,
+                stable_manage_token_hash = NULL, manage_token_expires_at = NULL,
+                updated_at = ?
+            WHERE status = 'pending' AND hold_expires_at <= ?
+        `).run(nowIso, nowIso).changes;
     }
 
     updateBooking(id, patch) {
@@ -236,9 +324,10 @@ class BookingStore {
             "booking_date", "booking_time", "duration_minutes", "party_size",
             "guest_name", "email", "phone", "requests", "internal_notes",
             "source", "status", "cancellation_token_hash", "email_status",
-            "stable_manage_token_hash",
+            "stable_manage_token_hash", "manage_token_expires_at", "idempotency_key",
             "updated_at", "cancelled_at", "call_confirmed_at",
-            "customer_confirmed_at", "reminder_sent_at", "area", "table_label",
+            "customer_confirmed_at", "reminder_sent_at", "reminder_claimed_at",
+            "hold_expires_at", "area", "table_label",
             "deposit_amount_pence", "deposit_status", "deposit_paid_at"
         ]);
         const entries = Object.entries(patch).filter(([key]) => allowed.has(key));
@@ -338,8 +427,24 @@ class BookingStore {
               AND email IS NOT NULL
               AND email <> ''
               AND reminder_sent_at IS NULL
+              AND reminder_claimed_at IS NULL
             ORDER BY booking_date ASC, booking_time ASC
         `).all();
+    }
+
+    claimReminder(id, claimedAt, staleBefore, force = false) {
+        const result = this.db.prepare(`
+            UPDATE bookings
+            SET reminder_claimed_at = ?
+            WHERE id = ?
+              AND (reminder_claimed_at IS NULL OR reminder_claimed_at < ?)
+              AND (? = 1 OR reminder_sent_at IS NULL)
+        `).run(claimedAt, id, staleBefore, force ? 1 : 0);
+        return result.changes === 1;
+    }
+
+    releaseReminderClaim(id) {
+        this.db.prepare("UPDATE bookings SET reminder_claimed_at = NULL WHERE id = ?").run(id);
     }
 
     listBookingsByContact(email, phone, excludeId = "") {
@@ -357,11 +462,11 @@ class BookingStore {
             INSERT INTO waitlist_entries (
                 id, booking_date, booking_time, party_size, guest_name,
                 email, phone, notes, status, created_at, updated_at,
-                notified_at, booked_at
+                notified_at, booked_at, idempotency_key, notification_claimed_at
             ) VALUES (
                 $id, $booking_date, $booking_time, $party_size, $guest_name,
                 $email, $phone, $notes, $status, $created_at, $updated_at,
-                $notified_at, $booked_at
+                $notified_at, $booked_at, $idempotency_key, $notification_claimed_at
             )
         `).run(entry);
         return this.getWaitlistEntry(entry.id);
@@ -369,6 +474,11 @@ class BookingStore {
 
     getWaitlistEntry(id) {
         return this.db.prepare("SELECT * FROM waitlist_entries WHERE id = ?").get(id) || null;
+    }
+
+    getWaitlistEntryByIdempotencyKey(key) {
+        if (!key) return null;
+        return this.db.prepare("SELECT * FROM waitlist_entries WHERE idempotency_key = ?").get(key) || null;
     }
 
     listWaitlist(date) {
@@ -388,7 +498,9 @@ class BookingStore {
     }
 
     updateWaitlistEntry(id, patch) {
-        const allowed = new Set(["status", "updated_at", "notified_at", "booked_at"]);
+        const allowed = new Set([
+            "status", "updated_at", "notified_at", "booked_at", "notification_claimed_at"
+        ]);
         const entries = Object.entries(patch).filter(([key]) => allowed.has(key));
         if (!entries.length) return this.getWaitlistEntry(id);
         const assignments = entries.map(([key]) => `${key} = $${key}`).join(", ");
@@ -397,6 +509,76 @@ class BookingStore {
             ...Object.fromEntries(entries)
         });
         return this.getWaitlistEntry(id);
+    }
+
+    claimWaitlistNotification(id, claimedAt, staleBefore, force = false) {
+        const result = this.db.prepare(`
+            UPDATE waitlist_entries
+            SET notification_claimed_at = ?
+            WHERE id = ?
+              AND (notification_claimed_at IS NULL OR notification_claimed_at < ?)
+              AND (? = 1 OR status = 'waiting')
+        `).run(claimedAt, id, staleBefore, force ? 1 : 0);
+        return result.changes === 1;
+    }
+
+    consumeRateLimit({ id, key, action, now, windowMs, limit }) {
+        return this.transaction(() => {
+            this.db.prepare("DELETE FROM rate_limit_events WHERE created_at < ?").run(now - (24 * 60 * 60 * 1000));
+            const count = this.db.prepare(`
+                SELECT COUNT(*) AS count FROM rate_limit_events
+                WHERE rate_key = ? AND action = ? AND created_at >= ?
+            `).get(key, action, now - windowMs).count;
+            if (count >= limit) return false;
+            this.db.prepare(`
+                INSERT INTO rate_limit_events (id, rate_key, action, created_at)
+                VALUES (?, ?, ?, ?)
+            `).run(id, key, action, now);
+            return true;
+        });
+    }
+
+    insertAdminEvent(event) {
+        this.db.prepare(`
+            INSERT INTO admin_events (
+                id, actor, action, target_type, target_id, details, request_id, created_at
+            ) VALUES (
+                $id, $actor, $action, $target_type, $target_id, $details, $request_id, $created_at
+            )
+        `).run(event);
+        return event;
+    }
+
+    applyRetention(cutoffs) {
+        return this.transaction(() => {
+            const bookingEmails = this.db.prepare("DELETE FROM booking_emails WHERE created_at < ?")
+                .run(cutoffs.email).changes;
+            const waitlistEmails = this.db.prepare("DELETE FROM waitlist_emails WHERE created_at < ?")
+                .run(cutoffs.email).changes;
+            const cancelled = this.db.prepare(`
+                UPDATE bookings SET
+                    guest_name = 'Deleted guest', email = NULL, phone = NULL,
+                    requests = '', internal_notes = '', cancellation_token_hash = NULL,
+                    stable_manage_token_hash = NULL, manage_token_expires_at = NULL,
+                    updated_at = ?
+                WHERE status = 'cancelled' AND cancelled_at < ?
+                  AND (email IS NOT NULL OR phone IS NOT NULL OR guest_name <> 'Deleted guest')
+            `).run(cutoffs.now, cutoffs.cancelled).changes;
+            const historic = this.db.prepare(`
+                UPDATE bookings SET
+                    guest_name = 'Deleted guest', email = NULL, phone = NULL,
+                    requests = '', internal_notes = '', cancellation_token_hash = NULL,
+                    stable_manage_token_hash = NULL, manage_token_expires_at = NULL,
+                    updated_at = ?
+                WHERE booking_date < ?
+                  AND (email IS NOT NULL OR phone IS NOT NULL OR guest_name <> 'Deleted guest')
+            `).run(cutoffs.now, cutoffs.customerDate).changes;
+            const waitlist = this.db.prepare(`
+                DELETE FROM waitlist_entries
+                WHERE updated_at < ? AND (status <> 'waiting' OR booking_date < ?)
+            `).run(cutoffs.waitlist, cutoffs.today).changes;
+            return { bookingEmails, waitlistEmails, cancelled, historic, waitlist };
+        });
     }
 
     insertWaitlistEmail(email) {

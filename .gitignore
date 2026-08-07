@@ -4,6 +4,9 @@ _site/
 .local/
 _source/
 *.log
+.env
+.env.*
+!.env.example
 .DS_Store
 Thumbs.db
 screenshot-*.png

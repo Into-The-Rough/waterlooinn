@@ -1,97 +1,95 @@
-# Waterloo Inn booking prototype
+# Waterloo Inn booking system
 
-This is a local-only table booking prototype for the Waterloo Inn website.
+The website includes public table booking and waiting-list flows, secure customer
+management links, email confirmations/reminders, and an authenticated admin diary.
+SQLite is used for the local prototype and is suitable for a single application
+instance when its database lives on persistent storage.
 
-## Run it
+## Local use
+
+Node.js 22.16 or newer is required. Build and start the combined site/API server
+with an admin password supplied through the environment:
 
 ```bash
-npm run dev:bookings
+BOOKING_ADMIN_PASSWORD='choose-a-long-local-password' npm run dev:bookings
 ```
 
 Then open:
 
 - Website: <http://127.0.0.1:8888/>
-- Dedicated booking page: <http://127.0.0.1:8888/book/>
-- Booking diary: <http://127.0.0.1:8888/admin/bookings/>
+- Booking page: <http://127.0.0.1:8888/book/>
+- Admin diary: <http://127.0.0.1:8888/admin/bookings/>
 
-The admin area opens with a month-at-a-glance calendar showing booking count,
-total covers and peak capacity for every day. Selecting a date opens its full
-diary below the overview. Customer phone numbers are tap-to-call links. Each
-booking also has a persistent "Called to confirm" checkbox with a timestamped
-admin audit history; named staff attribution can replace the generic "Admin"
-actor once production authentication is connected.
+The database is created at `.local/booking-diary.sqlite` by default. That
+directory and local environment files are ignored by Git. With no Resend API key,
+emails are stored as local previews and nothing is sent. Preview copies have all
+customer bearer tokens redacted and can only be opened by an authenticated admin.
 
-The diary also includes:
+## Security behaviour
 
-- A pre-service "Needs attention" queue for unconfirmed bookings, email
-  failures, large parties, special requests and waitlist entries
-- One-tap Arrived, Seated, Completed and No-show actions
-- Search and status filters
-- A print-ready daily service sheet
-- Restaurant, bar and outside area assignment plus table labels
-- Contact-based guest history, including previous visits, cancellations and
-  no-shows
-- A waiting-list diary with availability notifications and conversion into a
-  confirmed booking
+- The diary and all admin APIs require an eight-hour, HTTP-only admin session.
+  Every mutation also requires a same-origin CSRF token and an explicit permission.
+- Customer email links carry a random 256-bit token in the URL fragment. The
+  browser exchanges it for a booking-scoped, HTTP-only 30-minute session and
+  immediately removes the fragment from the address bar.
+- Management tokens are stored only as SHA-256 hashes, expire after service plus
+  a short grace period, and rotate when a replacement email is accepted.
+- Production bookings remain pending for 15 minutes until the email link is used;
+  the pending hold counts against capacity and expires automatically.
+- Booking and waitlist creation require idempotency keys. Capacity decisions and
+  insertions are serialized in SQLite transactions; reminder and waitlist sends
+  use database delivery claims.
+- Persistent per-source and per-contact rate limits, a form honeypot, a 64 KiB
+  JSON limit, short HTTP timeouts, strict input limits, and generic server errors
+  reduce abuse and information leakage.
+- Admin changes are attributed to the authenticated actor in booking and global
+  audit records. Security headers include CSP, no-referrer, no-store on sensitive
+  pages, frame denial, MIME sniffing protection, permissions policy, and HSTS in
+  production.
+- Stored email bodies are removed after 30 days. Cancelled customer data is
+  anonymised after 90 days, completed/historic customer data after 365 days, and
+  stale waitlist records after 90 days. Retention runs at startup and daily.
 
-Customers can confirm, amend or cancel through their secure email link.
-Amendments are capacity checked and generate updated customer and staff email
-previews. The local server checks once per minute for bookings within 24 hours
-and prepares reminder emails with confirm and change/cancel actions.
+## Production requirements
 
-The local database is created at `.local/booking-diary.sqlite`. This directory is
-ignored by Git.
+Use the variables documented in [`.env.example`](.env.example). Production mode
+will refuse to start unless the public URL is HTTPS, proxy trust is explicit, the
+admin password is at least 12 characters, email delivery is configured, and the
+database path is explicitly set to persistent storage.
 
-## Default rules
+Run one application instance. Admin and customer sessions are held in process
+memory, and SQLite must not be shared over a network filesystem. Put the process
+behind a trusted HTTPS reverse proxy, expose only the proxy publicly, forward a
+sanitised client IP and `X-Forwarded-Proto: https`, and restrict operating-system
+access to the service account and its database/backup directories.
 
-- Instant confirmation
-- Parties of 1–8
-- 30-minute arrival intervals
-- Two-hour table duration
-- 20 simultaneous online covers
-- Two hours' minimum notice
-- Booking up to 90 days ahead
-- Reminder 24 hours before arrival
-- Restaurant seating area by default; bar and outside are admin options
-- Monday: 12:00–20:00
-- Tuesday: closed
-- Wednesday and Thursday: 12:00–20:00
-- Friday and Saturday: 12:00–21:00
-- Sunday: 12:00–19:00
+The built-in password gate is appropriate for a single small venue account when
+the password is long, unique, stored as a deployment secret, and access logs are
+monitored. Before adding multiple staff roles or multiple application instances,
+replace it with a durable identity provider and shared server-side session store.
 
-## Local email mode
+## Backups and recovery
 
-With no email credentials configured, customer confirmations, staff
-notifications and cancellations are saved as safe previews. Open a booking in
-the diary to view its generated emails.
+`npm run backup:bookings` takes a consistent SQLite snapshot, encrypts it with
+AES-256-GCM, writes it with owner-only permissions, removes the plaintext
+temporary file, and prunes matching backups older than the configured retention.
 
-The templates are already prepared to use:
+Generate the key once and save it in the deployment secret store, separately from
+the backup destination:
 
-- From: `bookings@waterlooinnbiggin.com`
-- Staff notifications: `waterlooinn417@gmail.com`
-- Customer confirmation with a secure manage/cancel link
-- Customer and staff cancellation messages
+```bash
+openssl rand -base64 32
+```
 
-Nothing is sent while running in the default local mode.
+Schedule the backup command outside the web process, copy encrypted backups to a
+separate protected system, alert on failures, and periodically test decryption and
+`PRAGMA integrity_check` in an isolated restore directory. Do not overwrite the
+live database during a restore test.
 
-Waiting-list and reminder messages are safe email previews; SMS can be added as
-a second delivery channel without changing the booking workflow.
+## Default booking rules
 
-## Production work still required
-
-The user-facing flow and diary are complete prototypes, but publishing the
-system will require:
-
-1. Moving SQLite data to a production Postgres database.
-2. Exposing the API through authenticated server-side functions.
-3. Protecting the diary with the existing admin identity.
-4. Verifying `waterlooinnbiggin.com` with the email provider.
-5. Adding live email credentials as environment variables.
-6. Moving the one-minute local reminder check to a hosted scheduled job.
-7. Connecting optional reminders/waitlist alerts to an SMS provider.
-8. Agreeing a customer-data retention policy for guest history.
-9. Running a final test with the pub's confirmed kitchen hours, seating areas
-   and capacity.
-
-The local server deliberately does not contain deployable credentials or send
-real messages.
+- Parties of 1–8, 30-minute arrival intervals, and a two-hour table duration
+- 20 simultaneous online covers, two hours' notice, and 90 days' advance booking
+- Monday 12:00–20:00; Tuesday closed; Wednesday/Thursday 12:00–20:00;
+  Friday/Saturday 12:00–21:00; Sunday 12:00–19:00
+- Restaurant by default, with bar/outside allocation available to admins

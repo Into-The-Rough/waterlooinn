@@ -4,9 +4,13 @@
     var panel = document.querySelector("[data-manage-booking]");
     if (!panel) return;
 
-    var params = new URLSearchParams(window.location.search);
+    var params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     var token = params.get("token");
     var intent = params.get("intent");
+    if (window.location.hash) {
+        window.history.replaceState({}, "", window.location.pathname);
+    }
+    var csrfToken = "";
     var loading = panel.querySelector(".manage-loading");
     var errorPanel = panel.querySelector(".manage-error");
     var errorMessage = panel.querySelector(".manage-error-message");
@@ -49,12 +53,15 @@
     }
 
     async function api(url, options) {
-        var response = await fetch(url, Object.assign({
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            }
-        }, options || {}));
+        var settings = Object.assign({}, options || {});
+        settings.headers = Object.assign({
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }, settings.headers || {});
+        if (csrfToken && settings.method && settings.method !== "GET") {
+            settings.headers["X-CSRF-Token"] = csrfToken;
+        }
+        var response = await fetch(url, settings);
         var result = await response.json();
         if (!response.ok) throw new Error(result.error && result.error.message || "Request failed.");
         return result;
@@ -88,8 +95,7 @@
         amendError.hidden = true;
         try {
             var data = await api(
-                "/api/manage-availability?token=" + encodeURIComponent(token) +
-                "&date=" + encodeURIComponent(date) +
+                "/api/manage-availability?date=" + encodeURIComponent(date) +
                 "&partySize=" + encodeURIComponent(partySize),
                 { method: "GET" }
             );
@@ -142,9 +148,19 @@
     }
 
     async function loadBooking() {
-        if (!token) return showLoadError("The booking token is missing from this link.");
         try {
-            var result = await api("/api/manage-booking?token=" + encodeURIComponent(token), { method: "GET" });
+            var session;
+            if (token) {
+                session = await api("/api/manage-session", {
+                    method: "POST",
+                    body: JSON.stringify({ token: token })
+                });
+                token = "";
+            } else {
+                session = await api("/api/manage-session", { method: "GET" });
+            }
+            csrfToken = session.csrfToken;
+            var result = session.managed || await api("/api/manage-booking", { method: "GET" });
             applyManagedState(result);
             loading.hidden = true;
             details.hidden = false;
@@ -174,7 +190,7 @@
         try {
             var result = await api("/api/confirm-booking", {
                 method: "POST",
-                body: JSON.stringify({ token: token })
+                body: "{}"
             });
             applyManagedState(result);
         } catch (error) {
@@ -196,7 +212,6 @@
             var result = await api("/api/amend-booking", {
                 method: "PATCH",
                 body: JSON.stringify({
-                    token: token,
                     date: amendForm.elements.date.value,
                     time: amendForm.elements.time.value,
                     partySize: Number(amendForm.elements.partySize.value),
@@ -223,7 +238,7 @@
         try {
             await api("/api/cancel-booking", {
                 method: "POST",
-                body: JSON.stringify({ token: token })
+                body: "{}"
             });
             confirmPanel.hidden = true;
             confirmedPanel.hidden = true;

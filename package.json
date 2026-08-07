@@ -6,13 +6,17 @@
   "scripts": {
     "dev": "eleventy --serve",
     "dev:bookings": "npm run build && node --disable-warning=ExperimentalWarning scripts/booking-dev-server.js",
+    "backup:bookings": "node --disable-warning=ExperimentalWarning scripts/booking-backup.js",
     "build": "eleventy",
     "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.16.0"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@11ty/eleventy": "^3.1.2"
+    "@11ty/eleventy": "^3.1.6"
   }
 }

@@ -13,6 +13,10 @@ function escapeHtml(value) {
         .replaceAll("'", "&#039;");
 }
 
+function redactSensitiveHtml(value) {
+    return String(value || "").replace(/([?#&]token=)[A-Za-z0-9_-]+/g, "$1redacted");
+}
+
 function formatDate(value) {
     return new Intl.DateTimeFormat("en-GB", {
         weekday: "long",
@@ -105,6 +109,7 @@ class EmailService {
         try {
             const response = await fetch("https://api.resend.com/emails", {
                 method: "POST",
+                signal: AbortSignal.timeout(10_000),
                 headers: {
                     "Authorization": `Bearer ${this.apiKey}`,
                     "Content-Type": "application/json"
@@ -134,7 +139,7 @@ class EmailService {
             kind,
             recipient,
             subject,
-            html,
+            html: redactSensitiveHtml(html),
             status: this.apiKey ? "sending" : "preview",
             provider_id: null,
             error: null,
@@ -156,7 +161,7 @@ class EmailService {
             kind,
             recipient,
             subject,
-            html,
+            html: redactSensitiveHtml(html),
             status: this.apiKey ? "sending" : "preview",
             provider_id: null,
             error: null,
@@ -171,21 +176,26 @@ class EmailService {
     }
 
     async sendBookingEmails(booking, manageToken) {
-        const manageUrl = `${this.publicUrl}/booking/manage/?token=${encodeURIComponent(manageToken)}`;
+        const manageUrl = `${this.publicUrl}/booking/manage/#token=${encodeURIComponent(manageToken)}`;
+        const awaitingVerification = booking.status === "pending";
         const customerHtml = emailShell({
-            preheader: `Your table at The Waterloo Inn is confirmed for ${formatDate(booking.booking_date)}.`,
-            heading: "Your table is confirmed",
-            intro: `Thanks ${booking.guest_name}. We look forward to welcoming you to The Waterloo Inn.`,
+            preheader: awaitingVerification
+                ? `Confirm your Waterloo Inn booking for ${formatDate(booking.booking_date)}.`
+                : `Your table at The Waterloo Inn is confirmed for ${formatDate(booking.booking_date)}.`,
+            heading: awaitingVerification ? "Confirm your email to reserve the table" : "Your table is confirmed",
+            intro: awaitingVerification
+                ? `Thanks ${booking.guest_name}. Please use the secure button below within ${BOOKING_CONFIG.verificationHoldMinutes} minutes to confirm your booking.`
+                : `Thanks ${booking.guest_name}. We look forward to welcoming you to The Waterloo Inn.`,
             content: `${bookingDetails(booking)}
                 <p style="font-size:14px;line-height:1.6;color:#5a665d;">
                     Your table will be held for ${BOOKING_CONFIG.tableHoldMinutes} minutes after the booked time. If you are running late, please call us on ${escapeHtml(site.phone)}.
                 </p>`,
-            action: `<p style="text-align:center;margin:28px 0 0;">${emailButton(manageUrl, "Manage booking")}</p>`
+            action: `<p style="text-align:center;margin:28px 0 0;">${emailButton(manageUrl, awaitingVerification ? "Confirm booking" : "Manage booking")}</p>`
         });
         const staffHtml = emailShell({
             preheader: `New website booking: ${booking.reference}`,
             heading: "New table booking",
-            intro: `${booking.guest_name} has made a confirmed ${booking.source === "web" ? "website " : ""}booking.`,
+            intro: `${booking.guest_name} has made a ${awaitingVerification ? "booking awaiting email verification" : "confirmed booking"}.`,
             content: `${bookingDetails(booking)}
                 <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                     <tr><td style="padding:6px 0;color:#6e776f;">Telephone</td><td style="text-align:right;"><a href="tel:${escapeHtml(booking.phone || "")}">${escapeHtml(booking.phone || "Not supplied")}</a></td></tr>
@@ -201,7 +211,7 @@ class EmailService {
                 booking,
                 kind: "customer_confirmation",
                 recipient: booking.email,
-                subject: `Booking confirmed · ${formatDate(booking.booking_date)} at ${formatTime(booking.booking_time)}`,
+                subject: `${awaitingVerification ? "Please confirm your booking" : "Booking confirmed"} · ${formatDate(booking.booking_date)} at ${formatTime(booking.booking_time)}`,
                 html: customerHtml
             }));
         }
@@ -216,7 +226,7 @@ class EmailService {
     }
 
     async sendReminderEmail(booking, manageToken) {
-        const baseManageUrl = `${this.publicUrl}/booking/manage/?token=${encodeURIComponent(manageToken)}`;
+        const baseManageUrl = `${this.publicUrl}/booking/manage/#token=${encodeURIComponent(manageToken)}`;
         const html = emailShell({
             preheader: `A reminder about your table at The Waterloo Inn tomorrow.`,
             heading: "Are you still joining us?",
@@ -237,7 +247,7 @@ class EmailService {
     }
 
     async sendAmendmentEmails(booking, manageToken) {
-        const manageUrl = `${this.publicUrl}/booking/manage/?token=${encodeURIComponent(manageToken)}`;
+        const manageUrl = `${this.publicUrl}/booking/manage/#token=${encodeURIComponent(manageToken)}`;
         const customerHtml = emailShell({
             preheader: `Your Waterloo Inn booking has been updated.`,
             heading: "Your booking has been updated",
@@ -363,4 +373,4 @@ class EmailService {
     }
 }
 
-module.exports = { EmailService, escapeHtml, formatDate };
+module.exports = { EmailService, escapeHtml, formatDate, redactSensitiveHtml };

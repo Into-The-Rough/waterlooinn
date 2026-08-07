@@ -17,6 +17,10 @@
     var calendar = null;
     var calendarMonth = "";
     var attentionFilter = "";
+    var csrfToken = "";
+    var adminRequestId = window.crypto && window.crypto.randomUUID
+        ? window.crypto.randomUUID()
+        : String(Date.now()) + "-admin-" + Math.random().toString(36).slice(2);
 
     function isoDate(date) {
         var year = date.getFullYear();
@@ -93,12 +97,19 @@
     }
 
     async function api(url, options) {
-        var response = await fetch(url, Object.assign({
-            headers: {
-                "Accept": "application/json",
-                "Content-Type": "application/json"
-            }
-        }, options || {}));
+        var settings = Object.assign({}, options || {});
+        settings.headers = Object.assign({
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        }, settings.headers || {});
+        if (csrfToken && settings.method && !["GET", "HEAD"].includes(settings.method)) {
+            settings.headers["X-CSRF-Token"] = csrfToken;
+        }
+        var response = await fetch(url, settings);
+        if (response.status === 401) {
+            window.location.href = "/admin/bookings/login/";
+            throw new Error("Admin session expired.");
+        }
         var result = await response.json();
         if (!response.ok) throw new Error(result.error && result.error.message || "Request failed.");
         return result;
@@ -106,12 +117,14 @@
 
     function statusLabel(status) {
         return {
+            pending: "Awaiting email",
             confirmed: "Confirmed",
             arrived: "Arrived",
             seated: "Seated",
             completed: "Completed",
             cancelled: "Cancelled",
-            no_show: "No-show"
+            no_show: "No-show",
+            expired: "Expired"
         }[status] || status;
     }
 
@@ -275,7 +288,7 @@
                     '<label>Internal notes<textarea name="internalNotes" rows="2">' + escapeHtml(booking.internalNotes) + "</textarea></label>" +
                     '<div class="booking-edit-grid">' +
                         '<label>Status<select name="status">' +
-                            ["confirmed","arrived","seated","completed","cancelled","no_show"].map(function (value) {
+                            ["pending","confirmed","arrived","seated","completed","cancelled","no_show","expired"].map(function (value) {
                                 return option(value, booking.status, statusLabel(value));
                             }).join("") +
                         "</select></label>" +
@@ -741,6 +754,7 @@
         try {
             await api("/api/admin/bookings", {
                 method: "POST",
+                headers: { "Idempotency-Key": adminRequestId },
                 body: JSON.stringify({
                     date: addForm.elements.date.value,
                     time: addForm.elements.time.value,
@@ -763,6 +777,9 @@
                 });
             }
             showAlert(waitlistId ? "Waiting-list guest added as a confirmed booking." : "Booking added to the diary.", true);
+            adminRequestId = window.crypto && window.crypto.randomUUID
+                ? window.crypto.randomUUID()
+                : String(Date.now()) + "-admin-" + Math.random().toString(36).slice(2);
             var retainedDate = addForm.elements.date.value;
             addForm.reset();
             addForm.elements.date.value = retainedDate;
@@ -797,5 +814,23 @@
         }
     });
 
-    syncDate();
+    async function initialiseAdmin() {
+        var session = await api("/api/admin/session", { method: "GET" });
+        csrfToken = session.csrfToken;
+        var actor = document.querySelector("[data-admin-actor]");
+        if (actor) actor.textContent = session.actor;
+        syncDate();
+    }
+
+    var logout = document.querySelector("[data-admin-logout]");
+    if (logout) {
+        logout.addEventListener("click", async function () {
+            await api("/api/admin/session", { method: "DELETE", body: "{}" });
+            window.location.href = "/admin/bookings/login/";
+        });
+    }
+
+    initialiseAdmin().catch(function (error) {
+        showAlert(error.message, false);
+    });
 })();

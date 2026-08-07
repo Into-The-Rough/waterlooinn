@@ -58,6 +58,12 @@
         var waitlistError = form.querySelector(".booking-waitlist-error");
         var waitlistSuccess = form.querySelector(".booking-waitlist-success");
         var selectedTime = "";
+        var bookingRequestId = window.crypto && window.crypto.randomUUID
+            ? window.crypto.randomUUID()
+            : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
+        var waitlistRequestId = window.crypto && window.crypto.randomUUID
+            ? window.crypto.randomUUID()
+            : String(Date.now()) + "-waitlist-" + Math.random().toString(36).slice(2);
         var requested = new URLSearchParams(window.location.search);
         var requestedTime = requested.get("time") || "";
 
@@ -207,7 +213,8 @@
                     method: "POST",
                     headers: {
                         "Accept": "application/json",
-                        "Content-Type": "application/json"
+                        "Content-Type": "application/json",
+                        "Idempotency-Key": waitlistRequestId
                     },
                     body: JSON.stringify(waitlistPayload)
                 });
@@ -229,7 +236,8 @@
                 method: "POST",
                 headers: {
                     "Accept": "application/json",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Idempotency-Key": bookingRequestId
                 },
                 body: JSON.stringify(payload)
             });
@@ -294,6 +302,13 @@
                 var booking = result.booking;
                 form.hidden = true;
                 success.hidden = false;
+                if (booking.status === "pending") {
+                    success.querySelector(".booking-success-kicker").textContent = "Check your email";
+                    success.querySelector("h3").textContent = "Confirm to reserve your table";
+                } else {
+                    success.querySelector(".booking-success-kicker").textContent = "Booking confirmed";
+                    success.querySelector("h3").textContent = "We’ll see you at The Waterloo Inn";
+                }
                 success.querySelector(".booking-success-summary").textContent =
                     formatDate(booking.date) + " at " + booking.timeLabel + " for " +
                     booking.partySize + (booking.partySize === 1 ? " guest." : " guests.");
@@ -324,6 +339,12 @@
                 waitlistJoin.hidden = false;
                 waitlistJoin.disabled = false;
                 waitlistJoin.textContent = "Join waiting list";
+                bookingRequestId = window.crypto && window.crypto.randomUUID
+                    ? window.crypto.randomUUID()
+                    : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
+                waitlistRequestId = window.crypto && window.crypto.randomUUID
+                    ? window.crypto.randomUUID()
+                    : String(Date.now()) + "-waitlist-" + Math.random().toString(36).slice(2);
                 form.scrollIntoView({ behavior: "smooth", block: "start" });
             });
         }
