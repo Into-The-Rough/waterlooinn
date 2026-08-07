@@ -36,37 +36,19 @@ function safeEqual(left, right) {
 
 class SessionAuth {
     constructor(options = {}) {
-        this.adminPassword = options.adminPassword ?? process.env.BOOKING_ADMIN_PASSWORD ?? "";
-        this.adminActor = options.adminActor ?? process.env.BOOKING_ADMIN_USERNAME ?? "Waterloo Inn admin";
         this.secureCookies = Boolean(options.secureCookies);
         this.allowedOrigin = new URL(options.publicUrl || "http://127.0.0.1:8888").origin;
-        this.adminTtlMs = Number(options.adminTtlMs || 8 * 60 * 60 * 1000);
+        this.identityUrl = String(options.identityUrl ?? process.env.BOOKING_IDENTITY_URL ??
+            "https://waterlooinnbiggin.com/.netlify/identity").replace(/\/$/, "");
+        this.adminRoles = options.adminRoles ?? String(process.env.BOOKING_ADMIN_ROLES || "")
+            .split(",").map((role) => role.trim()).filter(Boolean);
+        this.fetch = options.fetch ?? globalThis.fetch;
+        this.now = options.now ?? (() => Date.now());
+        this.identityCacheMs = Number(options.identityCacheMs ?? 30_000);
+        this.identityCache = new Map();
+        this.identitySettings = null;
         this.manageTtlMs = Number(options.manageTtlMs || 30 * 60 * 1000);
-        this.adminSessions = new Map();
         this.manageSessions = new Map();
-    }
-
-    isAdminConfigured() {
-        return this.adminPassword.length >= 12;
-    }
-
-    verifyAdminPassword(password) {
-        return this.isAdminConfigured() && safeEqual(password, this.adminPassword);
-    }
-
-    createAdminSession() {
-        this.pruneSessions(this.adminSessions);
-        const id = randomToken();
-        const session = {
-            id,
-            csrf: randomToken(),
-            actor: this.adminActor,
-            role: "admin",
-            permissions: new Set(ADMIN_PERMISSIONS),
-            expiresAt: Date.now() + this.adminTtlMs
-        };
-        this.adminSessions.set(id, session);
-        return session;
     }
 
     createManageSession(bookingId) {
@@ -80,10 +62,6 @@ class SessionAuth {
         };
         this.manageSessions.set(id, session);
         return session;
-    }
-
-    getAdminSession(request) {
-        return this.getSession(this.adminSessions, parseCookies(request.headers.cookie).wi_admin_session);
     }
 
     getManageSession(request) {
@@ -112,26 +90,13 @@ class SessionAuth {
         }
     }
 
-    destroyAdminSession(request) {
-        const id = parseCookies(request.headers.cookie).wi_admin_session;
-        if (id) this.adminSessions.delete(id);
-    }
-
     destroyManageSession(request) {
         const id = parseCookies(request.headers.cookie).wi_manage_session;
         if (id) this.manageSessions.delete(id);
     }
 
-    adminCookie(session) {
-        return this.cookie("wi_admin_session", session.id, Math.floor(this.adminTtlMs / 1000));
-    }
-
     manageCookie(session) {
         return this.cookie("wi_manage_session", session.id, Math.floor(this.manageTtlMs / 1000));
-    }
-
-    clearAdminCookie() {
-        return this.cookie("wi_admin_session", "", 0);
     }
 
     clearManageCookie() {
@@ -150,8 +115,92 @@ class SessionAuth {
         if (origin && origin !== this.allowedOrigin) throw forbidden("Request origin is not allowed.");
     }
 
-    requireAdmin(request, permission = "bookings:read") {
-        const session = this.getAdminSession(request);
+    bearerToken(request) {
+        const match = /^Bearer ([A-Za-z0-9._~-]+)$/.exec(String(request.headers.authorization || ""));
+        if (!match || match[1].length > 8192) return null;
+        return match[1];
+    }
+
+    pruneIdentityCache() {
+        const now = this.now();
+        for (const [key, entry] of this.identityCache) {
+            if (entry.expiresAt <= now) this.identityCache.delete(key);
+        }
+        while (this.identityCache.size >= 1_000) {
+            this.identityCache.delete(this.identityCache.keys().next().value);
+        }
+    }
+
+    async getIdentitySettings() {
+        const now = this.now();
+        if (this.identitySettings?.expiresAt > now) return this.identitySettings.value;
+        const response = await this.identityFetch(`${this.identityUrl}/settings`, {});
+        if (!response.ok) throw authUnavailable();
+        const value = await response.json();
+        this.identitySettings = { value, expiresAt: now + 30_000 };
+        return value;
+    }
+
+    async identityFetch(url, options) {
+        try {
+            return await this.fetch(url, {
+                ...options,
+                signal: AbortSignal.timeout(5_000)
+            });
+        } catch {
+            throw authUnavailable();
+        }
+    }
+
+    tokenExpiry(token) {
+        try {
+            const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
+            return Number(payload.exp) * 1000;
+        } catch {
+            return 0;
+        }
+    }
+
+    async getAdminSession(request) {
+        const token = this.bearerToken(request);
+        if (!token) return null;
+        this.pruneIdentityCache();
+        const cacheKey = crypto.createHash("sha256").update(token).digest("hex");
+        const cached = this.identityCache.get(cacheKey);
+        if (cached?.expiresAt > this.now()) return cached.session;
+
+        const response = await this.identityFetch(`${this.identityUrl}/user`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (response.status === 401 || response.status === 403) return null;
+        if (!response.ok) throw authUnavailable();
+        const user = await response.json();
+        const roles = Array.isArray(user.app_metadata?.roles) ? user.app_metadata.roles : [];
+        if (this.adminRoles.length) {
+            if (!roles.some((role) => this.adminRoles.includes(role))) {
+                throw forbidden("This Identity account cannot access the booking diary.");
+            }
+        } else {
+            const settings = await this.getIdentitySettings();
+            if (settings.disable_signup !== true) {
+                throw forbidden("Booking access requires invite-only Identity or configured admin roles.");
+            }
+        }
+        const session = {
+            identityId: user.id,
+            actor: user.user_metadata?.full_name || user.email || "Waterloo Inn admin",
+            email: user.email || "",
+            role: roles[0] || "identity-user",
+            permissions: new Set(ADMIN_PERMISSIONS)
+        };
+        const tokenExpiry = this.tokenExpiry(token);
+        const expiresAt = Math.min(this.now() + this.identityCacheMs, tokenExpiry || Number.MAX_SAFE_INTEGER);
+        this.identityCache.set(cacheKey, { session, expiresAt });
+        return session;
+    }
+
+    async requireAdmin(request, permission = "bookings:read") {
+        const session = await this.getAdminSession(request);
         if (!session) throw unauthorized("Admin authentication is required.");
         if (!session.permissions.has(permission)) throw forbidden("This account cannot perform that action.");
         return session;
@@ -177,6 +226,13 @@ function unauthorized(message) {
 
 function forbidden(message) {
     return Object.assign(new Error(message), { status: 403, code: "FORBIDDEN" });
+}
+
+function authUnavailable() {
+    return Object.assign(new Error("The admin identity service is temporarily unavailable."), {
+        status: 503,
+        code: "IDENTITY_UNAVAILABLE"
+    });
 }
 
 module.exports = { ADMIN_PERMISSIONS, SessionAuth, parseCookies, safeEqual };

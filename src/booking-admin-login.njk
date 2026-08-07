@@ -3,7 +3,7 @@ layout: false
 permalink: /admin/bookings/login/
 ---
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-identity-url="{{ site.url }}/.netlify/identity">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,17 +11,19 @@ permalink: /admin/bookings/login/
     <meta name="robots" content="noindex,nofollow">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="stylesheet" href="/css/booking-admin.css">
+    <script src="/js/booking-identity-config.js" defer></script>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js" defer></script>
+    <script src="/js/booking-identity.js" defer></script>
 </head>
 <body class="admin-login-page">
     <main class="admin-login-shell">
-        <form class="admin-login-card" data-admin-login>
+        <section class="admin-login-card" data-admin-login>
             <p class="admin-eyebrow">The Waterloo Inn</p>
             <h1>Booking diary sign in</h1>
-            <p>Enter the booking-admin password configured on the server.</p>
-            <label>Password<input type="password" name="password" minlength="12" autocomplete="current-password" required></label>
+            <p>Use the same Netlify Identity account as the website content manager.</p>
             <div class="admin-login-error" role="alert" hidden></div>
-            <button type="submit" class="admin-button">Sign in</button>
-        </form>
+            <button type="button" class="admin-button" data-identity-login>Sign in with Waterloo Inn admin</button>
+        </section>
     </main>
     <script src="/js/booking-admin-login.js" defer></script>
 </body>

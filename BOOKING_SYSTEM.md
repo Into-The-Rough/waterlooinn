@@ -7,11 +7,10 @@ instance when its database lives on persistent storage.
 
 ## Local use
 
-Node.js 22.16 or newer is required. Build and start the combined site/API server
-with an admin password supplied through the environment:
+Node.js 22.16 or newer is required. Build and start the combined site/API server:
 
 ```bash
-BOOKING_ADMIN_PASSWORD='choose-a-long-local-password' npm run dev:bookings
+npm run dev:bookings
 ```
 
 Then open:
@@ -27,8 +26,10 @@ customer bearer tokens redacted and can only be opened by an authenticated admin
 
 ## Security behaviour
 
-- The diary and all admin APIs require an eight-hour, HTTP-only admin session.
-  Every mutation also requires a same-origin CSRF token and an explicit permission.
+- The diary reuses the site's existing invite-only Netlify Identity. Every admin
+  API validates the current Identity bearer with the Waterloo Inn Identity service,
+  checks its permission and enforces same-origin mutations. There is no separate
+  booking password.
 - Customer email links carry a random 256-bit token in the URL fragment. The
   browser exchanges it for a booking-scoped, HTTP-only 30-minute session and
   immediately removes the fragment from the address bar.
@@ -53,20 +54,20 @@ customer bearer tokens redacted and can only be opened by an authenticated admin
 ## Production requirements
 
 Use the variables documented in [`.env.example`](.env.example). Production mode
-will refuse to start unless the public URL is HTTPS, proxy trust is explicit, the
-admin password is at least 12 characters, email delivery is configured, and the
-database path is explicitly set to persistent storage.
+will refuse to start unless the public and Identity URLs are HTTPS, proxy trust is
+explicit, email delivery is configured, and the database path is explicitly set
+to persistent storage.
 
-Run one application instance. Admin and customer sessions are held in process
+Run one application instance. Customer management sessions are held in process
 memory, and SQLite must not be shared over a network filesystem. Put the process
 behind a trusted HTTPS reverse proxy, expose only the proxy publicly, forward a
 sanitised client IP and `X-Forwarded-Proto: https`, and restrict operating-system
 access to the service account and its database/backup directories.
 
-The built-in password gate is appropriate for a single small venue account when
-the password is long, unique, stored as a deployment secret, and access logs are
-monitored. Before adding multiple staff roles or multiple application instances,
-replace it with a durable identity provider and shared server-side session store.
+The current Identity tenant has public signup disabled, matching the existing
+Decap CMS access policy. For finer separation, assign an Identity role to booking
+staff and configure `BOOKING_ADMIN_ROLES`. Before adding multiple application
+instances, move customer management sessions to a shared server-side session store.
 
 ## Backups and recovery
 

@@ -17,6 +17,9 @@ const databasePath = process.env.BOOKING_DATABASE_PATH ||
 const port = Number(process.env.BOOKING_PORT || 8888);
 const host = process.env.BOOKING_HOST || "127.0.0.1";
 const publicUrl = process.env.BOOKING_PUBLIC_URL || `http://${host}:${port}`;
+const identityUrl = process.env.BOOKING_IDENTITY_URL ||
+    "https://waterlooinnbiggin.com/.netlify/identity";
+const identityOrigin = new URL(identityUrl).origin;
 const isProduction = process.env.NODE_ENV === "production";
 const trustProxy = process.env.BOOKING_TRUST_PROXY === "true";
 
@@ -27,14 +30,14 @@ if (isProduction) {
     if (!trustProxy) {
         throw new Error("BOOKING_TRUST_PROXY=true is required behind the production HTTPS proxy.");
     }
-    if (String(process.env.BOOKING_ADMIN_PASSWORD || "").length < 12) {
-        throw new Error("BOOKING_ADMIN_PASSWORD must contain at least 12 characters in production.");
-    }
     if (!process.env.RESEND_API_KEY) {
         throw new Error("RESEND_API_KEY is required for production email verification.");
     }
     if (!process.env.BOOKING_DATABASE_PATH) {
         throw new Error("BOOKING_DATABASE_PATH must point to persistent storage in production.");
+    }
+    if (new URL(identityUrl).protocol !== "https:") {
+        throw new Error("BOOKING_IDENTITY_URL must use HTTPS in production.");
     }
 }
 
@@ -45,6 +48,7 @@ const mailer = new EmailService(store, {
 const service = new BookingService(store, mailer);
 const auth = new SessionAuth({
     publicUrl,
+    identityUrl,
     secureCookies: new URL(publicUrl).protocol === "https:"
 });
 
@@ -169,7 +173,7 @@ function setSecurityHeaders(response, pathname) {
         contentSecurityPolicy = "default-src 'self'; script-src 'self' https://unpkg.com https://identity.netlify.com 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.netlify.com https://*.netlify.app https://api.github.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
     } else if (pathname.startsWith("/admin/bookings/") || pathname.startsWith("/booking/manage/") ||
         pathname.startsWith("/book/")) {
-        contentSecurityPolicy = "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+        contentSecurityPolicy = `default-src 'self'; script-src 'self' https://identity.netlify.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' ${identityOrigin}; frame-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`;
     } else {
         contentSecurityPolicy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src 'self' https://www.google.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
     }
@@ -216,48 +220,28 @@ async function handleApi(request, response, url) {
     const { pathname, searchParams } = url;
     const requestId = response.getHeader("X-Request-Id");
 
-    if (request.method === "POST" && pathname === "/api/admin/login") {
-        auth.assertSameOrigin(request);
-        checkRateLimit(request, "admin-login", 5, 15 * 60 * 1000);
-        const input = await readJson(request);
-        if (!auth.isAdminConfigured()) {
-            throw Object.assign(new Error("Booking admin authentication is not configured."), {
-                status: 503,
-                code: "AUTH_NOT_CONFIGURED"
-            });
-        }
-        if (!auth.verifyAdminPassword(input.password)) {
-            throw Object.assign(new Error("The password is incorrect."), { status: 401, code: "AUTH_FAILED" });
-        }
-        auth.destroyAdminSession(request);
-        const session = auth.createAdminSession();
+    if (request.method === "GET" && pathname === "/api/admin/session") {
+        const session = await auth.requireAdmin(request, "bookings:read");
         store.insertAdminEvent({
-            id: crypto.randomUUID(), actor: session.actor, action: "admin_login",
-            target_type: "session", target_id: null, details: "", request_id: requestId,
+            id: crypto.randomUUID(), actor: session.actor, action: "admin_identity_verified",
+            target_type: "session", target_id: session.identityId, details: "", request_id: requestId,
             created_at: new Date().toISOString()
         });
-        return sendJson(response, 200, { ok: true }, { "Set-Cookie": auth.adminCookie(session) });
-    }
-
-    if (request.method === "GET" && pathname === "/api/admin/session") {
-        const session = auth.requireAdmin(request, "bookings:read");
         return sendJson(response, 200, {
             actor: session.actor,
-            role: session.role,
-            csrfToken: session.csrf
+            role: session.role
         });
     }
 
     if (request.method === "DELETE" && pathname === "/api/admin/session") {
-        const session = auth.requireAdmin(request, "bookings:read");
-        auth.requireCsrf(request, session);
+        const session = await auth.requireAdmin(request, "bookings:read");
+        auth.assertSameOrigin(request);
         store.insertAdminEvent({
             id: crypto.randomUUID(), actor: session.actor, action: "admin_logout",
             target_type: "session", target_id: null, details: "", request_id: requestId,
             created_at: new Date().toISOString()
         });
-        auth.destroyAdminSession(request);
-        return sendJson(response, 200, { ok: true }, { "Set-Cookie": auth.clearAdminCookie() });
+        return sendJson(response, 200, { ok: true });
     }
 
     let adminSession = null;
@@ -266,8 +250,8 @@ async function handleApi(request, response, url) {
         if (request.method === "GET") permission = "bookings:read";
         if (/\/(emails|reminder|reminders|resend|notify)(\/|$)/.test(pathname)) permission = "bookings:email";
         if (/\/blocks(\/|$)/.test(pathname)) permission = "bookings:capacity";
-        adminSession = auth.requireAdmin(request, permission);
-        if (!["GET", "HEAD"].includes(request.method)) auth.requireCsrf(request, adminSession);
+        adminSession = await auth.requireAdmin(request, permission);
+        if (!["GET", "HEAD"].includes(request.method)) auth.assertSameOrigin(request);
     }
 
     const audit = () => ({
@@ -503,6 +487,11 @@ async function handleApi(request, response, url) {
         const emailId = decodeURIComponent(emailMatch[1]);
         const email = store.getEmail(emailId) || store.getWaitlistEmail(emailId);
         if (!email) throw Object.assign(new Error("Email preview not found."), { status: 404 });
+        store.insertAdminEvent({
+            id: crypto.randomUUID(), actor: adminSession.actor, action: "email_preview_viewed",
+            target_type: "email", target_id: emailId, details: "", request_id: requestId,
+            created_at: new Date().toISOString()
+        });
         response.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
             "Cache-Control": "no-store",
@@ -531,14 +520,6 @@ const server = http.createServer(async (request, response) => {
         }
         if (url.pathname.startsWith("/api/")) {
             return await handleApi(request, response, url);
-        }
-        if (request.method === "GET" && /^\/admin\/bookings\/?$/.test(url.pathname) && !auth.getAdminSession(request)) {
-            response.writeHead(303, { "Location": "/admin/bookings/login/", "Cache-Control": "no-store" });
-            return response.end();
-        }
-        if (request.method === "GET" && /^\/admin\/bookings\/login\/?$/.test(url.pathname) && auth.getAdminSession(request)) {
-            response.writeHead(303, { "Location": "/admin/bookings/", "Cache-Control": "no-store" });
-            return response.end();
         }
         if (request.method === "GET" && serveStatic(url.pathname, response)) return;
         response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });

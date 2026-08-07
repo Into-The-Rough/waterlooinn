@@ -17,7 +17,6 @@
     var calendar = null;
     var calendarMonth = "";
     var attentionFilter = "";
-    var csrfToken = "";
     var adminRequestId = window.crypto && window.crypto.randomUUID
         ? window.crypto.randomUUID()
         : String(Date.now()) + "-admin-" + Math.random().toString(36).slice(2);
@@ -98,13 +97,18 @@
 
     async function api(url, options) {
         var settings = Object.assign({}, options || {});
+        var identityToken;
+        try {
+            identityToken = await window.bookingIdentity.token();
+        } catch (error) {
+            if (error.code === "AUTH_REQUIRED") window.location.replace("/admin/bookings/login/");
+            throw error;
+        }
         settings.headers = Object.assign({
             "Accept": "application/json",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + identityToken
         }, settings.headers || {});
-        if (csrfToken && settings.method && !["GET", "HEAD"].includes(settings.method)) {
-            settings.headers["X-CSRF-Token"] = csrfToken;
-        }
         var response = await fetch(url, settings);
         if (response.status === 401) {
             window.location.href = "/admin/bookings/login/";
@@ -816,7 +820,6 @@
 
     async function initialiseAdmin() {
         var session = await api("/api/admin/session", { method: "GET" });
-        csrfToken = session.csrfToken;
         var actor = document.querySelector("[data-admin-actor]");
         if (actor) actor.textContent = session.actor;
         syncDate();
@@ -825,8 +828,12 @@
     var logout = document.querySelector("[data-admin-logout]");
     if (logout) {
         logout.addEventListener("click", async function () {
-            await api("/api/admin/session", { method: "DELETE", body: "{}" });
-            window.location.href = "/admin/bookings/login/";
+            try {
+                await api("/api/admin/session", { method: "DELETE", body: "{}" });
+            } finally {
+                await window.bookingIdentity.logout();
+                window.location.href = "/admin/";
+            }
         });
     }
 

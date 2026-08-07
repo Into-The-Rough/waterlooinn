@@ -696,7 +696,7 @@ class BookingService {
                 guestHistory: this.guestHistoryFor(row),
                 emails: emails.map((email) => ({
                     ...email,
-                    previewUrl: `/api/admin/emails/${email.id}`
+                    previewUrl: `/admin/bookings/email-preview/?id=${encodeURIComponent(email.id)}`
                 })),
                 auditEvents: auditEvents.map((event) => this.eventForAdmin(event))
             };
@@ -705,7 +705,7 @@ class BookingService {
             ...publicWaitlistEntry(row),
             emails: this.store.listWaitlistEmails(row.id).map((email) => ({
                 ...email,
-                previewUrl: `/api/admin/emails/${email.id}`
+                previewUrl: `/admin/bookings/email-preview/?id=${encodeURIComponent(email.id)}`
             }))
         }));
         const active = bookings.filter((booking) => ACTIVE_STATUSES.has(booking.status));

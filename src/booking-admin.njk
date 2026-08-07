@@ -3,7 +3,7 @@ layout: false
 permalink: /admin/bookings/
 ---
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-identity-url="{{ site.url }}/.netlify/identity">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +14,9 @@ permalink: /admin/bookings/
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/booking-admin.css">
+    <script src="/js/booking-identity-config.js" defer></script>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js" defer></script>
+    <script src="/js/booking-identity.js" defer></script>
 </head>
 <body>
     <div class="admin-print-heading">
@@ -23,7 +26,7 @@ permalink: /admin/bookings/
     <header class="admin-header">
         <a href="/" class="admin-logo">The Waterloo <span>Inn</span></a>
         <div class="admin-header-actions">
-            <span class="admin-local-badge" data-admin-actor>Authenticated admin</span>
+            <span class="admin-local-badge" data-admin-actor>Checking identity…</span>
             <a href="/admin/" class="admin-content-link">Website content</a>
             <button type="button" class="admin-content-link admin-logout" data-admin-logout>Sign out</button>
         </div>
