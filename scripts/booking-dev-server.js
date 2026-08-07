@@ -170,7 +170,7 @@ function setSecurityHeaders(response, pathname) {
         pathname.startsWith("/api/admin/") || pathname.startsWith("/api/manage");
     let contentSecurityPolicy;
     if (pathname.startsWith("/admin/") && !pathname.startsWith("/admin/bookings/")) {
-        contentSecurityPolicy = "default-src 'self'; script-src 'self' https://unpkg.com https://identity.netlify.com 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' https://*.netlify.com https://*.netlify.app https://api.github.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+        contentSecurityPolicy = `default-src 'self'; script-src 'self' https://unpkg.com https://identity.netlify.com 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; connect-src 'self' ${identityOrigin} https://*.netlify.com https://*.netlify.app https://api.github.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`;
     } else if (pathname.startsWith("/admin/bookings/") || pathname.startsWith("/booking/manage/") ||
         pathname.startsWith("/book/")) {
         contentSecurityPolicy = `default-src 'self'; script-src 'self' https://identity.netlify.com; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' ${identityOrigin}; frame-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`;

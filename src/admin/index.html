@@ -1,23 +1,25 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" data-identity-url="https://waterlooinnbiggin.com/.netlify/identity">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin | The Waterloo Inn</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/css/admin-shell.css">
+    <script src="/js/booking-identity-config.js"></script>
     <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 </head>
-<body>
+<body class="content-admin-page">
+    <header class="content-admin-header">
+        <a class="content-admin-brand" href="/">The Waterloo <span>Inn</span></a>
+        <nav class="content-admin-nav" aria-label="Administration">
+            <a href="/admin/" aria-current="page">Website content</a>
+            <a href="/admin/bookings/">Booking diary</a>
+        </nav>
+    </header>
+    <div id="nc-root"></div>
     <script src="https://unpkg.com/decap-cms@3.3.3/dist/decap-cms.js"></script>
-    <script>
-        CMS.registerPreviewStyle("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap");
-        CMS.registerPreviewStyle("/css/style.css");
-        window.addEventListener("load", function () {
-            var link = document.createElement("a");
-            link.href = "/admin/bookings/";
-            link.textContent = "Booking Diary";
-            link.setAttribute("style", "position:fixed;right:18px;bottom:18px;z-index:9999;background:#C8A84E;color:#0F2318;padding:11px 16px;border-radius:3px;font:600 13px 'DM Sans',sans-serif;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,.25)");
-            document.body.appendChild(link);
-        });
-    </script>
+    <script src="/js/admin-cms.js"></script>
 </body>
 </html>

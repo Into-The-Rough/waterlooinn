@@ -146,6 +146,12 @@ a {
     gap: 16px;
 }
 
+.admin-section-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
 .admin-local-badge {
     border: 1px solid rgba(255,255,255,.3);
     border-radius: 999px;
@@ -160,7 +166,16 @@ a {
     color: var(--gold);
     font-size: .85rem;
     font-weight: 700;
+    padding: 8px 10px;
+    border-radius: 4px;
     text-decoration: none;
+}
+
+.admin-content-link:hover,
+.admin-content-link:focus-visible,
+.admin-content-link[aria-current="page"] {
+    background: rgba(255,255,255,.12);
+    outline: none;
 }
 
 .admin-shell {
@@ -1132,9 +1147,28 @@ h2 {
 }
 
 @media (max-width: 760px) {
-    .admin-header,
     .admin-titlebar {
         align-items: flex-start;
+    }
+
+    .admin-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .admin-section-nav {
+        order: 3;
+        width: 100%;
+    }
+
+    .admin-section-nav .admin-content-link {
+        flex: 1;
+        text-align: center;
     }
 
     .admin-titlebar {
