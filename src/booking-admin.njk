@@ -56,6 +56,29 @@ permalink: /admin/bookings/
 
         <div class="admin-alert" role="alert" hidden></div>
 
+        <section class="admin-master-switch" data-booking-master-switch aria-labelledby="booking-master-heading">
+            <div class="admin-master-switch-copy">
+                <p class="admin-eyebrow">Master switch</p>
+                <h2 id="booking-master-heading">Online bookings</h2>
+                <p data-booking-master-description>Checking the public booking form…</p>
+                <small data-booking-master-updated></small>
+            </div>
+            <div class="admin-master-controls">
+                <form class="admin-capacity-control" data-capacity-form>
+                    <label for="admin-max-covers">Peak cover capacity</label>
+                    <div>
+                        <input type="number" id="admin-max-covers" name="maxCovers" min="1" max="500" step="1" required disabled>
+                        <button type="submit" class="admin-button admin-button-secondary" disabled>Save</button>
+                    </div>
+                </form>
+                <label class="admin-switch-control">
+                    <input type="checkbox" role="switch" data-booking-master-toggle disabled>
+                    <span class="admin-switch-track" aria-hidden="true"><span></span></span>
+                    <strong data-booking-master-label>Checking…</strong>
+                </label>
+            </div>
+        </section>
+
         <section class="admin-panel admin-calendar-panel" aria-labelledby="calendar-heading">
             <div class="admin-panel-heading admin-calendar-heading">
                 <div>
@@ -88,7 +111,7 @@ permalink: /admin/bookings/
             <div class="admin-stat"><span>Bookings</span><strong data-stat="bookings">0</strong></div>
             <div class="admin-stat"><span>Total covers</span><strong data-stat="covers">0</strong></div>
             <div class="admin-stat"><span>Peak covers</span><strong data-stat="peak">0</strong></div>
-            <div class="admin-stat"><span>Peak availability</span><strong data-stat="remaining">20</strong></div>
+            <div class="admin-stat"><span>Peak availability</span><strong data-stat="remaining">30</strong></div>
         </section>
 
         <section class="admin-panel admin-attention-panel" aria-labelledby="attention-heading">
@@ -196,7 +219,7 @@ permalink: /admin/bookings/
                         <label>Internal notes <span>(optional)</span><textarea name="internalNotes" rows="2" maxlength="1000"></textarea></label>
                         <label class="admin-checkbox">
                             <input type="checkbox" name="overrideCapacity">
-                            <span>Override the 20-cover limit</span>
+                            <span data-capacity-override-label>Override the current capacity limit</span>
                         </label>
                         <button type="submit" class="admin-button">Add confirmed booking</button>
                     </form>

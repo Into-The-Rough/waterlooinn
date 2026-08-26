@@ -1315,6 +1315,41 @@ h1, h2, h3, h4 {
     width: 100%;
 }
 
+.booking-closed-message {
+    max-width: 620px;
+    margin: 0 auto;
+    border: 1px solid rgba(245, 240, 232, 0.22);
+    background: rgba(245, 240, 232, 0.05);
+    padding: clamp(28px, 5vw, 42px);
+    text-align: center;
+}
+
+.booking-closed-message h3 {
+    color: var(--text-light);
+    font-size: clamp(1.7rem, 4vw, 2.2rem);
+    margin: 6px 0 10px;
+}
+
+.booking-closed-message > p:not(.eyebrow) {
+    color: rgba(245, 240, 232, 0.76);
+    line-height: 1.65;
+    margin: 0 auto 24px;
+    max-width: 500px;
+}
+
+.booking-closed-message .btn {
+    display: inline-block;
+}
+
+html[data-online-bookings="closed"] [data-online-booking-only],
+html[data-online-bookings="closed"] [data-online-bookings-open] {
+    display: none !important;
+}
+
+html[data-online-bookings="closed"] [data-online-bookings-closed] {
+    display: block !important;
+}
+
 .booking-step {
     border: 1px solid rgba(245, 240, 232, 0.18);
     padding: 28px;

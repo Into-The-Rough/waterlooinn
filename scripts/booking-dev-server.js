@@ -51,7 +51,6 @@ const auth = new SessionAuth({
     identityUrl,
     secureCookies: new URL(publicUrl).protocol === "https:"
 });
-
 const MIME_TYPES = {
     ".css": "text/css; charset=utf-8",
     ".html": "text/html; charset=utf-8",
@@ -78,7 +77,7 @@ function sendJson(response, status, payload, extraHeaders = {}) {
 
 function sendError(response, error) {
     const status = Number(error.status) || 500;
-    if (status >= 500) console.error(error);
+    if (status >= 500 && error.code !== "ONLINE_BOOKINGS_CLOSED") console.error(error);
     sendJson(response, status, {
         error: {
             code: error.code || (status === 500 ? "SERVER_ERROR" : "REQUEST_ERROR"),
@@ -205,13 +204,24 @@ function serveStatic(pathname, response) {
         else if (fs.existsSync(htmlFile)) filePath = htmlFile;
     }
     if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return false;
-    response.writeHead(200, {
+    const headers = {
         "Content-Type": MIME_TYPES[path.extname(filePath).toLowerCase()] || "application/octet-stream",
         "Cache-Control": pathname.startsWith("/admin/") || pathname.startsWith("/booking/manage/")
             ? "no-store"
             : (path.extname(filePath) === ".html" ? "no-cache" : "public, max-age=300"),
         "X-Content-Type-Options": "nosniff"
-    });
+    };
+    if (path.extname(filePath).toLowerCase() === ".html") {
+        const state = service.getOnlineBookingState();
+        const html = fs.readFileSync(filePath, "utf8").replace(
+            /<html\b/,
+            `<html data-online-bookings="${state.enabled ? "open" : "closed"}"`
+        );
+        response.writeHead(200, headers);
+        response.end(html);
+        return true;
+    }
+    response.writeHead(200, headers);
     fs.createReadStream(filePath).pipe(response);
     return true;
 }
@@ -219,6 +229,11 @@ function serveStatic(pathname, response) {
 async function handleApi(request, response, url) {
     const { pathname, searchParams } = url;
     const requestId = response.getHeader("X-Request-Id");
+
+    if (request.method === "GET" && pathname === "/api/booking-status") {
+        const state = service.getOnlineBookingState();
+        return sendJson(response, 200, { enabled: state.enabled });
+    }
 
     if (request.method === "GET" && pathname === "/api/admin/session") {
         const session = await auth.requireAdmin(request, "bookings:read");
@@ -250,6 +265,7 @@ async function handleApi(request, response, url) {
         if (request.method === "GET") permission = "bookings:read";
         if (/\/(emails|reminder|reminders|resend|notify)(\/|$)/.test(pathname)) permission = "bookings:email";
         if (/\/blocks(\/|$)/.test(pathname)) permission = "bookings:capacity";
+        if (/\/booking-settings(\/|$)/.test(pathname)) permission = "bookings:capacity";
         adminSession = await auth.requireAdmin(request, permission);
         if (!["GET", "HEAD"].includes(request.method)) auth.assertSameOrigin(request);
     }
@@ -271,7 +287,7 @@ async function handleApi(request, response, url) {
         return sendJson(
             response,
             200,
-            service.getAvailability(searchParams.get("date"), searchParams.get("partySize"))
+            service.getPublicAvailability(searchParams.get("date"), searchParams.get("partySize"))
         );
     }
 
@@ -374,6 +390,25 @@ async function handleApi(request, response, url) {
 
     if (request.method === "GET" && pathname === "/api/admin/calendar") {
         return sendJson(response, 200, service.listCalendar(searchParams.get("month")));
+    }
+
+    if (request.method === "GET" && pathname === "/api/admin/booking-settings") {
+        return sendJson(response, 200, service.getOnlineBookingState());
+    }
+
+    if (request.method === "PATCH" && pathname === "/api/admin/booking-settings") {
+        const input = await readJson(request);
+        const hasEnabled = Object.hasOwn(input, "enabled");
+        const hasMaxCovers = Object.hasOwn(input, "maxCovers");
+        if (!hasEnabled && !hasMaxCovers) {
+            throw Object.assign(new Error("No booking setting was provided."), {
+                status: 400,
+                code: "VALIDATION_ERROR"
+            });
+        }
+        if (hasEnabled) service.setOnlineBookingsEnabled(input.enabled, audit());
+        if (hasMaxCovers) service.setMaxOnlineCovers(input.maxCovers, audit());
+        return sendJson(response, 200, service.getOnlineBookingState());
     }
 
     if (request.method === "POST" && pathname === "/api/admin/bookings") {
@@ -564,6 +599,7 @@ server.listen(port, host, () => {
     console.log(`Waterloo booking prototype: http://${host}:${port}`);
     console.log(`Booking diary: http://${host}:${port}/admin/bookings/`);
     console.log(`Database: ${databasePath}`);
+    console.log(`Online bookings: ${service.getOnlineBookingState().enabled ? "enabled" : "disabled"}.`);
     if (!process.env.RESEND_API_KEY) {
         console.log("Email mode: local previews in the booking diary (nothing is sent).");
     }

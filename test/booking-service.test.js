@@ -18,6 +18,9 @@ function createFixture(options = {}) {
         now: options.now || (() => new Date("2026-07-28T10:00:00Z")),
         requireEmailVerification: options.requireEmailVerification ?? false
     });
+    if (options.onlineBookingsEnabled !== false) {
+        service.setOnlineBookingsEnabled(true, { actor: "Test setup" });
+    }
     const manageTokens = new Map();
     for (const method of ["sendBookingEmails", "sendAmendmentEmails", "sendReminderEmail"]) {
         const original = mailer[method].bind(mailer);
@@ -41,6 +44,17 @@ function createFixture(options = {}) {
     store.testManageTokens = manageTokens;
     return { store, mailer, service };
 }
+
+test("a fresh booking database starts with public online bookings disabled", (t) => {
+    const { store, service } = createFixture({ onlineBookingsEnabled: false });
+    t.after(() => store.close());
+
+    assert.equal(service.getOnlineBookingState().enabled, false);
+    assert.throws(
+        () => service.getPublicAvailability("2026-07-29", 2),
+        (error) => error.code === "ONLINE_BOOKINGS_CLOSED"
+    );
+});
 
 function manageTokenFor(store, bookingId) {
     return store.testManageTokens.get(bookingId);
@@ -73,6 +87,52 @@ test("publishes the configured Wednesday availability", (t) => {
         () => service.getAvailability("2026-08-04", 2),
         /not available on this day/
     );
+});
+
+test("global master switch blocks new public bookings but leaves admin booking available", async (t) => {
+    const { store, service } = createFixture();
+    t.after(() => store.close());
+
+    assert.equal(service.getOnlineBookingState().enabled, true);
+    assert.equal(service.getOnlineBookingState().maxCovers, 30);
+    const disabled = service.setOnlineBookingsEnabled(false, {
+        actor: "Test Manager",
+        requestId: "request-1"
+    });
+    assert.equal(disabled.enabled, false);
+    assert.equal(disabled.updatedBy, "Test Manager");
+    assert.throws(
+        () => service.getPublicAvailability("2026-07-29", 2),
+        (error) => error.code === "ONLINE_BOOKINGS_CLOSED"
+    );
+    await assert.rejects(
+        service.createBooking(bookingInput()),
+        (error) => error.code === "ONLINE_BOOKINGS_CLOSED"
+    );
+
+    const adminBooking = await service.createBooking(bookingInput({
+        email: "",
+        phone: "",
+        source: "phone"
+    }), { admin: true, actor: "Test Manager" });
+    assert.equal(adminBooking.booking.status, "confirmed");
+
+    const enabled = service.setOnlineBookingsEnabled(true, { actor: "Test Manager" });
+    assert.equal(enabled.enabled, true);
+    assert.equal(service.getPublicAvailability("2026-07-29", 2).slots[0].available, true);
+});
+
+test("peak cover capacity is editable and used by availability and diary summaries", (t) => {
+    const { store, service } = createFixture();
+    t.after(() => store.close());
+
+    const state = service.setMaxOnlineCovers(36, { actor: "Test Manager" });
+    assert.equal(state.maxCovers, 36);
+    assert.equal(service.getAvailability("2026-07-29", 2).slots[0].remainingCovers, 36);
+    assert.equal(service.listDiary("2026-07-29").config.maxOnlineCovers, 36);
+    assert.equal(service.listCalendar("2026-07").maxCovers, 36);
+    assert.throws(() => service.setMaxOnlineCovers(0), /between 1 and 500/);
+    assert.throws(() => service.setMaxOnlineCovers(12.5), /whole number/);
 });
 
 test("creates a confirmed booking and customer/staff email previews", async (t) => {
@@ -110,9 +170,15 @@ test("enforces overlapping cover capacity", async (t) => {
     }));
     await service.createBooking(bookingInput({
         time: "13:00",
-        partySize: 4,
+        partySize: 8,
         name: "Third Party",
         email: "third@example.com"
+    }));
+    await service.createBooking(bookingInput({
+        time: "13:30",
+        partySize: 6,
+        name: "Fourth Party",
+        email: "fourth@example.com"
     }));
 
     const availability = service.getAvailability("2026-07-29", 1);
@@ -205,7 +271,7 @@ test("monthly calendar summarises bookings, covers and peak capacity", async (t)
     assert.equal(bookedDay.bookingCount, 2);
     assert.equal(bookedDay.totalCovers, 10);
     assert.equal(bookedDay.peakCovers, 10);
-    assert.equal(bookedDay.peakRemaining, 10);
+    assert.equal(bookedDay.peakRemaining, 20);
     assert.equal(closedDay.wholeDayClosed, true);
 });
 
@@ -299,9 +365,14 @@ test("a cancellation offers released capacity to the earliest waiting guest", as
         email: "second-full@example.com"
     }));
     await service.createBooking(bookingInput({
-        partySize: 4,
+        partySize: 8,
         name: "Third Full Table",
         email: "third-full@example.com"
+    }));
+    await service.createBooking(bookingInput({
+        partySize: 6,
+        name: "Fourth Full Table",
+        email: "fourth-full@example.com"
     }));
 
     const waitlist = await service.createWaitlistEntry({
@@ -460,7 +531,8 @@ test("waiting-list creation is idempotent", async (t) => {
     t.after(() => store.close());
     await service.createBooking(bookingInput({ partySize: 8, email: "one@example.com" }));
     await service.createBooking(bookingInput({ partySize: 8, email: "two@example.com" }));
-    await service.createBooking(bookingInput({ partySize: 4, email: "three@example.com" }));
+    await service.createBooking(bookingInput({ partySize: 8, email: "three@example.com" }));
+    await service.createBooking(bookingInput({ partySize: 6, email: "four@example.com" }));
     const input = {
         date: "2026-07-29",
         time: "12:00",

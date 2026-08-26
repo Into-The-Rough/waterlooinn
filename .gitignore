@@ -10,3 +10,6 @@ _source/
 .DS_Store
 Thumbs.db
 screenshot-*.png
+
+# Local Netlify folder
+.netlify

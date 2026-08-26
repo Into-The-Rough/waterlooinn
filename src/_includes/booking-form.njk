@@ -1,5 +1,12 @@
 <div class="booking-widget" data-booking-widget>
-    <form class="booking-form js-booking-form" novalidate>
+    <section class="booking-closed-message" data-online-bookings-closed hidden aria-live="polite">
+        <p class="eyebrow">Online booking paused</p>
+        <h3>Call us to book a table</h3>
+        <p>Online bookings are temporarily unavailable. Please call the team and we’ll be happy to help.</p>
+        <a href="tel:{{ site.phone }}" class="btn btn-gold">Call {{ site.phone }}</a>
+    </section>
+
+    <form class="booking-form js-booking-form" data-online-bookings-open novalidate>
         <div class="booking-step">
             <div class="booking-step-heading">
                 <span class="booking-step-number">1</span>

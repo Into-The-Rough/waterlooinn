@@ -13,6 +13,15 @@
     var statusFilter = document.querySelector("[data-status-filter]");
     var filterEmpty = document.querySelector("[data-filter-empty]");
     var attentionList = document.querySelector("[data-attention-list]");
+    var masterSwitch = document.querySelector("[data-booking-master-switch]");
+    var masterToggle = document.querySelector("[data-booking-master-toggle]");
+    var masterLabel = document.querySelector("[data-booking-master-label]");
+    var masterDescription = document.querySelector("[data-booking-master-description]");
+    var masterUpdated = document.querySelector("[data-booking-master-updated]");
+    var capacityForm = document.querySelector("[data-capacity-form]");
+    var capacityInput = capacityForm.elements.maxCovers;
+    var capacitySubmit = capacityForm.querySelector('button[type="submit"]');
+    var capacityOverrideLabel = document.querySelector("[data-capacity-override-label]");
     var diary = null;
     var calendar = null;
     var calendarMonth = "";
@@ -117,6 +126,29 @@
         var result = await response.json();
         if (!response.ok) throw new Error(result.error && result.error.message || "Request failed.");
         return result;
+    }
+
+    function renderBookingSettings(state) {
+        masterToggle.checked = state.enabled;
+        masterToggle.disabled = false;
+        masterSwitch.classList.toggle("is-enabled", state.enabled);
+        masterSwitch.classList.toggle("is-disabled", !state.enabled);
+        masterLabel.textContent = state.enabled ? "ON" : "OFF";
+        masterDescription.textContent = state.enabled
+            ? "The website is accepting new table bookings and waiting-list requests."
+            : "The public form and booking menu buttons are hidden. Admin, telephone and walk-in bookings still work.";
+        masterUpdated.textContent = state.updatedAt
+            ? "Last changed " + formatDateTime(state.updatedAt) + (state.updatedBy ? " by " + state.updatedBy : "")
+            : "No manual changes yet.";
+        capacityInput.value = state.maxCovers;
+        capacityInput.disabled = false;
+        capacitySubmit.disabled = false;
+        capacityOverrideLabel.textContent = "Override the " + state.maxCovers + "-cover limit";
+    }
+
+    async function loadBookingSettings() {
+        var state = await api("/api/admin/booking-settings", { method: "GET" });
+        renderBookingSettings(state);
     }
 
     function statusLabel(status) {
@@ -750,6 +782,44 @@
         }
     });
 
+    masterToggle.addEventListener("change", async function () {
+        var enabled = masterToggle.checked;
+        masterToggle.disabled = true;
+        try {
+            var state = await api("/api/admin/booking-settings", {
+                method: "PATCH",
+                body: JSON.stringify({ enabled: enabled })
+            });
+            renderBookingSettings(state);
+            showAlert(enabled
+                ? "Online bookings are now enabled across the website."
+                : "Online bookings are now disabled across the website.", true);
+        } catch (error) {
+            masterToggle.checked = !enabled;
+            masterToggle.disabled = false;
+            showAlert(error.message, false);
+        }
+    });
+
+    capacityForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        capacityInput.disabled = true;
+        capacitySubmit.disabled = true;
+        try {
+            var state = await api("/api/admin/booking-settings", {
+                method: "PATCH",
+                body: JSON.stringify({ maxCovers: Number(capacityInput.value) })
+            });
+            renderBookingSettings(state);
+            showAlert("Peak cover capacity is now " + state.maxCovers + ".", true);
+            await refreshAll();
+        } catch (error) {
+            capacityInput.disabled = false;
+            capacitySubmit.disabled = false;
+            showAlert(error.message, false);
+        }
+    });
+
     addForm.addEventListener("submit", async function (event) {
         event.preventDefault();
         var submit = addForm.querySelector('button[type="submit"]');
@@ -822,6 +892,7 @@
         var session = await api("/api/admin/session", { method: "GET" });
         var actor = document.querySelector("[data-admin-actor]");
         if (actor) actor.textContent = session.actor;
+        await loadBookingSettings();
         syncDate();
     }
 

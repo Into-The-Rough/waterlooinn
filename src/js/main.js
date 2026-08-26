@@ -5,6 +5,13 @@
 (function () {
     'use strict';
 
+    // Netlify Identity invitation and recovery emails return to the public site.
+    // Carry the token to the admin page, where the Identity widget can complete it.
+    if (/^#(?:invite_token|recovery_token|confirmation_token|email_change_token)=/.test(window.location.hash)) {
+        window.location.replace('/admin/' + window.location.hash);
+        return;
+    }
+
     // --- Header scroll effect ---
     const header = document.getElementById('header');
 

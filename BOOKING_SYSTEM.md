@@ -24,6 +24,23 @@ directory and local environment files are ignored by Git. With no Resend API key
 emails are stored as local previews and nothing is sent. Preview copies have all
 customer bearer tokens redacted and can only be opened by an authenticated admin.
 
+### Online booking master switch
+
+The top of the authenticated booking diary contains a global **Online bookings**
+switch. Turning it off immediately hides booking buttons in the website navigation,
+replaces both public booking forms with a telephone message, and rejects direct
+availability, booking and waiting-list API requests. The setting is stored in the
+booking database and survives server restarts. Admin, telephone and walk-in
+bookings—and existing customer management links—continue to work. Every change is
+attributed to the authenticated admin in the global audit log. A fresh booking
+database starts with online bookings **OFF**, so an admin must deliberately enable
+them after deployment checks are complete.
+
+The same panel contains a **Peak cover capacity** field. This controls the maximum
+number of guests whose two-hour bookings may overlap at any one time. It defaults
+to 30, can be changed without restarting the server, and is reflected immediately
+in public availability, the daily summary and the monthly calendar.
+
 ## Security behaviour
 
 - The diary reuses the site's existing invite-only Netlify Identity. Every admin
@@ -90,7 +107,7 @@ live database during a restore test.
 ## Default booking rules
 
 - Parties of 1–8, 30-minute arrival intervals, and a two-hour table duration
-- 20 simultaneous online covers, two hours' notice, and 90 days' advance booking
+- 30 simultaneous online covers, two hours' notice, and 90 days' advance booking
 - Monday 12:00–20:00; Tuesday closed; Wednesday/Thursday 12:00–20:00;
   Friday/Saturday 12:00–21:00; Sunday 12:00–19:00
 - Restaurant by default, with bar/outside allocation available to admins

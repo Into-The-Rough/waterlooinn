@@ -250,6 +250,19 @@ class BookingStore {
         }
     }
 
+    getAppMeta(key, fallback = null) {
+        const row = this.db.prepare("SELECT value FROM app_meta WHERE key = ?").get(key);
+        return row ? row.value : fallback;
+    }
+
+    setAppMeta(key, value) {
+        this.db.prepare(`
+            INSERT INTO app_meta (key, value) VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        `).run(key, String(value));
+        return String(value);
+    }
+
     insertBooking(booking) {
         this.db.prepare(`
             INSERT INTO bookings (

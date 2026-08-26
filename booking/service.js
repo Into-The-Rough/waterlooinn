@@ -183,6 +183,80 @@ class BookingService {
         });
     }
 
+    getOnlineBookingState() {
+        return {
+            enabled: this.store.getAppMeta("online_bookings_enabled", "false") === "true",
+            maxCovers: this.getMaxOnlineCovers(),
+            updatedAt: this.store.getAppMeta("online_bookings_updated_at") || null,
+            updatedBy: this.store.getAppMeta("online_bookings_updated_by") || null
+        };
+    }
+
+    getMaxOnlineCovers() {
+        const stored = Number(this.store.getAppMeta("max_online_covers", BOOKING_CONFIG.maxOnlineCovers));
+        return Number.isInteger(stored) && stored >= 1 && stored <= 500
+            ? stored
+            : BOOKING_CONFIG.maxOnlineCovers;
+    }
+
+    requireOnlineBookingsEnabled() {
+        if (this.getOnlineBookingState().enabled) return;
+        throw Object.assign(new Error(
+            "Online booking is temporarily unavailable. Please call us on 01298 463248."
+        ), {
+            status: 503,
+            code: "ONLINE_BOOKINGS_CLOSED"
+        });
+    }
+
+    setOnlineBookingsEnabled(enabled, audit = {}) {
+        if (typeof enabled !== "boolean") {
+            throw validationError("Please provide a valid online booking state.", "enabled");
+        }
+        const current = this.getOnlineBookingState();
+        if (current.enabled === enabled) return current;
+        const actor = cleanText(audit.actor || "Admin", 100);
+        const updatedAt = this.nowIso();
+        this.store.transaction(() => {
+            this.store.setAppMeta("online_bookings_enabled", enabled ? "true" : "false");
+            this.store.setAppMeta("online_bookings_updated_at", updatedAt);
+            this.store.setAppMeta("online_bookings_updated_by", actor);
+            this.appendAdminEvent(
+                actor,
+                enabled ? "online_bookings_enabled" : "online_bookings_disabled",
+                "booking_settings",
+                "global",
+                enabled ? "Public online bookings opened" : "Public online bookings closed",
+                audit.requestId
+            );
+        });
+        return this.getOnlineBookingState();
+    }
+
+    setMaxOnlineCovers(value, audit = {}) {
+        const maxCovers = Number(value);
+        if (!Number.isInteger(maxCovers) || maxCovers < 1 || maxCovers > 500) {
+            throw validationError("Peak cover capacity must be a whole number between 1 and 500.", "maxCovers");
+        }
+        if (this.getMaxOnlineCovers() === maxCovers) return this.getOnlineBookingState();
+        const actor = cleanText(audit.actor || "Admin", 100);
+        const updatedAt = this.nowIso();
+        this.store.transaction(() => {
+            this.store.setAppMeta("max_online_covers", maxCovers);
+            this.store.setAppMeta("online_bookings_updated_at", updatedAt);
+            this.store.setAppMeta("online_bookings_updated_by", actor);
+            this.appendAdminEvent(
+                actor,
+                "online_capacity_changed",
+                "booking_settings",
+                "global",
+                `Peak cover capacity changed to ${maxCovers}`,
+                audit.requestId
+            );
+        });
+        return this.getOnlineBookingState();
+    }
+
     validateDate(date, { allowPast = false, allowClosedDay = false } = {}) {
         if (!isIsoDate(date)) throw validationError("Please choose a valid date.", "date");
         const current = venueNow(this.nowDate());
@@ -227,6 +301,7 @@ class BookingService {
         const blocks = this.store.listBlocks(validDate);
         const blockedTimes = new Set(blocks.map((block) => block.booking_time));
         const wholeDayBlocked = blockedTimes.has("*");
+        const maxOnlineCovers = this.getMaxOnlineCovers();
         const slots = generateSlots(validDate).map((time) => {
             const usedCovers = this.overlappingCovers(
                 validDate,
@@ -234,7 +309,7 @@ class BookingService {
                 BOOKING_CONFIG.durationMinutes,
                 excludeId
             );
-            const remainingCovers = Math.max(0, BOOKING_CONFIG.maxOnlineCovers - usedCovers);
+            const remainingCovers = Math.max(0, maxOnlineCovers - usedCovers);
             const tooSoon = validDate === current.date &&
                 timeToMinutes(time) < current.minutes + BOOKING_CONFIG.minimumNoticeMinutes;
             const blocked = wholeDayBlocked || blockedTimes.has(time);
@@ -260,6 +335,11 @@ class BookingService {
             durationMinutes: BOOKING_CONFIG.durationMinutes,
             slots
         };
+    }
+
+    getPublicAvailability(date, partySizeValue) {
+        this.requireOnlineBookingsEnabled();
+        return this.getAvailability(date, partySizeValue);
     }
 
     getManagedAvailability(token, date, partySize) {
@@ -327,6 +407,7 @@ class BookingService {
         actor = "Admin",
         requestId = null
     } = {}) {
+        if (!admin) this.requireOnlineBookingsEnabled();
         const value = this.normaliseInput(input, { admin });
         if (!admin && value.emailSuggestion && input.acceptEmailSuggestion !== true) {
             throw Object.assign(
@@ -371,7 +452,7 @@ class BookingService {
                     value.time,
                     BOOKING_CONFIG.durationMinutes
                 );
-                if (used + value.partySize > BOOKING_CONFIG.maxOnlineCovers) {
+                if (used + value.partySize > this.getMaxOnlineCovers()) {
                     throw validationError(
                         "This booking would exceed the current online cover limit. Use the override if the pub can accommodate it.",
                         "partySize",
@@ -719,10 +800,12 @@ class BookingService {
             specialRequest: bookings.filter((booking) => booking.attention.specialRequest).length,
             waiting: waitlist.filter((entry) => entry.status === "waiting").length
         };
+        const maxOnlineCovers = this.getMaxOnlineCovers();
         return {
             date,
             config: {
                 ...BOOKING_CONFIG,
+                maxOnlineCovers,
                 serviceHours: undefined
             },
             service: getServiceRule(date),
@@ -735,7 +818,7 @@ class BookingService {
                 bookingCount: active.length,
                 covers: active.reduce((total, booking) => total + booking.partySize, 0),
                 peakCovers,
-                peakRemaining: Math.max(0, BOOKING_CONFIG.maxOnlineCovers - peakCovers)
+                peakRemaining: Math.max(0, maxOnlineCovers - peakCovers)
             }
         };
     }
@@ -749,6 +832,7 @@ class BookingService {
             throw validationError("Please choose a valid month.", "month");
         }
         this.store.expirePendingHolds(this.nowIso());
+        const maxOnlineCovers = this.getMaxOnlineCovers();
         const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
         const days = [];
 
@@ -785,8 +869,8 @@ class BookingService {
                 bookingCount: activeRows.length,
                 totalCovers: activeRows.reduce((total, booking) => total + booking.party_size, 0),
                 peakCovers,
-                peakRemaining: Math.max(0, BOOKING_CONFIG.maxOnlineCovers - peakCovers),
-                capacityPercent: Math.min(100, Math.round((peakCovers / BOOKING_CONFIG.maxOnlineCovers) * 100)),
+                peakRemaining: Math.max(0, maxOnlineCovers - peakCovers),
+                capacityPercent: Math.min(100, Math.round((peakCovers / maxOnlineCovers) * 100)),
                 cancellationCount: rows.filter((booking) => booking.status === "cancelled").length,
                 waitlistCount: this.store.listWaitlist(date).filter((entry) => entry.status === "waiting").length
             });
@@ -802,7 +886,7 @@ class BookingService {
                 timeZone: "UTC"
             }).format(new Date(Date.UTC(year, monthNumber - 1, 1))),
             firstWeekday: (new Date(Date.UTC(year, monthNumber - 1, 1)).getUTCDay() + 6) % 7,
-            maxCovers: BOOKING_CONFIG.maxOnlineCovers,
+            maxCovers: maxOnlineCovers,
             days
         };
     }
@@ -838,7 +922,7 @@ class BookingService {
                 BOOKING_CONFIG.durationMinutes,
                 id
             );
-            if (used + value.partySize > BOOKING_CONFIG.maxOnlineCovers) {
+            if (used + value.partySize > this.getMaxOnlineCovers()) {
                 throw validationError(
                     "This change would exceed the current cover limit.",
                     "partySize",
@@ -886,7 +970,7 @@ class BookingService {
                 const transactionalUsed = this.overlappingCovers(
                     value.date, value.time, BOOKING_CONFIG.durationMinutes, id
                 );
-                if (transactionalUsed + value.partySize > BOOKING_CONFIG.maxOnlineCovers) {
+                if (transactionalUsed + value.partySize > this.getMaxOnlineCovers()) {
                     throw validationError("This change would exceed the current cover limit.",
                         "partySize", "CAPACITY_EXCEEDED");
                 }
@@ -1062,6 +1146,7 @@ class BookingService {
     }
 
     async createWaitlistEntry(input, { idempotencyKey = null } = {}) {
+        this.requireOnlineBookingsEnabled();
         if (!/^[A-Za-z0-9._:-]{16,128}$/.test(String(idempotencyKey || ""))) {
             throw validationError("A valid waiting-list request identifier is required.", null, "IDEMPOTENCY_REQUIRED");
         }

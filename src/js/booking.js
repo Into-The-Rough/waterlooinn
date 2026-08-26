@@ -41,6 +41,8 @@
         var form = widget.querySelector(".js-booking-form");
         if (!form) return;
 
+        var closedPanel = widget.querySelector("[data-online-bookings-closed]");
+
         var dateInput = form.elements.date;
         var partyInput = form.elements.partySize;
         var details = form.querySelector(".booking-details");
@@ -66,6 +68,37 @@
             : String(Date.now()) + "-waitlist-" + Math.random().toString(36).slice(2);
         var requested = new URLSearchParams(window.location.search);
         var requestedTime = requested.get("time") || "";
+
+        function showBookingForm() {
+            document.documentElement.dataset.onlineBookings = "open";
+            closedPanel.hidden = true;
+            form.hidden = false;
+        }
+
+        function showBookingClosed() {
+            document.documentElement.dataset.onlineBookings = "closed";
+            form.hidden = true;
+            closedPanel.hidden = false;
+        }
+
+        async function checkBookingStatus() {
+            try {
+                var response = await fetch("/api/booking-status", {
+                    headers: { "Accept": "application/json" }
+                });
+                var state = await response.json();
+                if (!response.ok) throw new Error("Online booking status could not be checked.");
+                if (!state.enabled) {
+                    showBookingClosed();
+                    return;
+                }
+                showBookingForm();
+                if (dateInput.value && partyInput.value) loadAvailability();
+            } catch (error) {
+                form.hidden = true;
+                showBookingClosed();
+            }
+        }
 
         var today = new Date();
         dateInput.min = isoDate(today);
@@ -164,7 +197,12 @@
                     { headers: { "Accept": "application/json" } }
                 );
                 var data = await response.json();
-                if (!response.ok) throw new Error(data.error && data.error.message || "Availability could not be loaded.");
+                if (!response.ok) {
+                    if (data.error && data.error.code === "ONLINE_BOOKINGS_CLOSED") {
+                        showBookingClosed();
+                    }
+                    throw new Error(data.error && data.error.message || "Availability could not be loaded.");
+                }
                 renderSlots(data);
             } catch (error) {
                 prompt.textContent = error.message;
@@ -219,7 +257,12 @@
                     body: JSON.stringify(waitlistPayload)
                 });
                 var result = await response.json();
-                if (!response.ok) throw new Error(result.error && result.error.message || "The waiting list could not be joined.");
+                if (!response.ok) {
+                    if (result.error && result.error.code === "ONLINE_BOOKINGS_CLOSED") {
+                        showBookingClosed();
+                    }
+                    throw new Error(result.error && result.error.message || "The waiting list could not be joined.");
+                }
                 waitlistSuccess.textContent = "You’re on the waiting list. We’ve prepared an email with the details.";
                 waitlistSuccess.hidden = false;
                 waitlistJoin.hidden = true;
@@ -243,6 +286,9 @@
             });
             var result = await response.json();
             if (!response.ok) {
+                if (result.error && result.error.code === "ONLINE_BOOKINGS_CLOSED") {
+                    showBookingClosed();
+                }
                 var apiError = new Error(result.error && result.error.message || "The booking could not be completed.");
                 apiError.code = result.error && result.error.code;
                 apiError.field = result.error && result.error.field;
@@ -349,6 +395,6 @@
             });
         }
 
-        if (dateInput.value && partyInput.value) loadAvailability();
+        checkBookingStatus();
     });
 })();
