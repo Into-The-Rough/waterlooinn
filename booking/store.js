@@ -50,10 +50,7 @@ class BookingStore {
                 reminder_claimed_at TEXT,
                 hold_expires_at TEXT,
                 area TEXT NOT NULL DEFAULT 'Restaurant',
-                table_label TEXT NOT NULL DEFAULT '',
-                deposit_amount_pence INTEGER NOT NULL DEFAULT 0,
-                deposit_status TEXT NOT NULL DEFAULT 'not_required',
-                deposit_paid_at TEXT
+                table_label TEXT NOT NULL DEFAULT ''
             );
 
             CREATE INDEX IF NOT EXISTS idx_bookings_date
@@ -180,9 +177,6 @@ class BookingStore {
             idempotency_key: "TEXT",
             area: "TEXT NOT NULL DEFAULT 'Restaurant'",
             table_label: "TEXT NOT NULL DEFAULT ''",
-            deposit_amount_pence: "INTEGER NOT NULL DEFAULT 0",
-            deposit_status: "TEXT NOT NULL DEFAULT 'not_required'",
-            deposit_paid_at: "TEXT",
             reminder_claimed_at: "TEXT",
             hold_expires_at: "TEXT"
         };
@@ -227,21 +221,12 @@ class BookingStore {
             `).run("manage_token_version", "2");
         }
 
-        this.db.prepare(`
-            UPDATE bookings
-            SET deposit_amount_pence = 0,
-                deposit_status = 'not_required',
-                deposit_paid_at = NULL
-            WHERE deposit_amount_pence <> 0
-               OR deposit_status <> 'not_required'
-               OR deposit_paid_at IS NOT NULL
-        `).run();
     }
 
-    transaction(callback) {
+    async transaction(callback) {
         this.db.exec("BEGIN IMMEDIATE");
         try {
-            const result = callback();
+            const result = await callback();
             this.db.exec("COMMIT");
             return result;
         } catch (error) {
@@ -272,8 +257,7 @@ class BookingStore {
                 stable_manage_token_hash, manage_token_expires_at, idempotency_key,
                 created_at, updated_at, cancelled_at, call_confirmed_at,
                 customer_confirmed_at, reminder_sent_at, reminder_claimed_at,
-                hold_expires_at, area, table_label,
-                deposit_amount_pence, deposit_status, deposit_paid_at
+                hold_expires_at, area, table_label
             ) VALUES (
                 $id, $reference, $booking_date, $booking_time, $duration_minutes,
                 $party_size, $guest_name, $email, $phone, $requests, $internal_notes,
@@ -281,8 +265,7 @@ class BookingStore {
                 $stable_manage_token_hash, $manage_token_expires_at, $idempotency_key,
                 $created_at, $updated_at, $cancelled_at, $call_confirmed_at,
                 $customer_confirmed_at, $reminder_sent_at, $reminder_claimed_at,
-                $hold_expires_at, $area, $table_label,
-                $deposit_amount_pence, $deposit_status, $deposit_paid_at
+                $hold_expires_at, $area, $table_label
             )
         `).run(booking);
         return this.getBooking(booking.id);
@@ -340,8 +323,7 @@ class BookingStore {
             "stable_manage_token_hash", "manage_token_expires_at", "idempotency_key",
             "updated_at", "cancelled_at", "call_confirmed_at",
             "customer_confirmed_at", "reminder_sent_at", "reminder_claimed_at",
-            "hold_expires_at", "area", "table_label",
-            "deposit_amount_pence", "deposit_status", "deposit_paid_at"
+            "hold_expires_at", "area", "table_label"
         ]);
         const entries = Object.entries(patch).filter(([key]) => allowed.has(key));
         if (entries.length === 0) return this.getBooking(id);

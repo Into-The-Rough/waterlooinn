@@ -48,24 +48,65 @@ class SessionAuth {
         this.identityCache = new Map();
         this.identitySettings = null;
         this.manageTtlMs = Number(options.manageTtlMs || 30 * 60 * 1000);
+        this.sessionSecret = String(options.sessionSecret ?? process.env.BOOKING_SESSION_SECRET ?? "");
         this.manageSessions = new Map();
     }
 
     createManageSession(bookingId) {
+        if (this.sessionSecret) {
+            const session = {
+                csrf: randomToken(),
+                bookingId,
+                expiresAt: this.now() + this.manageTtlMs
+            };
+            session.id = this.signManageSession(session);
+            return session;
+        }
         this.pruneSessions(this.manageSessions);
         const id = randomToken();
         const session = {
             id,
             csrf: randomToken(),
             bookingId,
-            expiresAt: Date.now() + this.manageTtlMs
+            expiresAt: this.now() + this.manageTtlMs
         };
         this.manageSessions.set(id, session);
         return session;
     }
 
     getManageSession(request) {
-        return this.getSession(this.manageSessions, parseCookies(request.headers.cookie).wi_manage_session);
+        const id = parseCookies(request.headers.cookie).wi_manage_session;
+        return this.sessionSecret ? this.verifyManageSession(id) : this.getSession(this.manageSessions, id);
+    }
+
+    signManageSession(session) {
+        const payload = Buffer.from(JSON.stringify({
+            bookingId: session.bookingId,
+            csrf: session.csrf,
+            expiresAt: session.expiresAt
+        })).toString("base64url");
+        const signature = crypto.createHmac("sha256", this.sessionSecret).update(payload).digest("base64url");
+        return `${payload}.${signature}`;
+    }
+
+    verifyManageSession(token) {
+        if (!token || token.length > 4096) return null;
+        const separator = token.lastIndexOf(".");
+        if (separator < 1) return null;
+        const payload = token.slice(0, separator);
+        const signature = token.slice(separator + 1);
+        const expected = crypto.createHmac("sha256", this.sessionSecret).update(payload).digest("base64url");
+        if (!safeEqual(signature, expected)) return null;
+        try {
+            const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+            if (typeof session.bookingId !== "string" || typeof session.csrf !== "string" ||
+                !Number.isFinite(session.expiresAt) || session.expiresAt <= this.now()) {
+                return null;
+            }
+            return { ...session, id: token };
+        } catch {
+            return null;
+        }
     }
 
     getSession(collection, id) {
@@ -73,7 +114,7 @@ class SessionAuth {
         if (!id) return null;
         const session = collection.get(id) || null;
         if (!session) return null;
-        if (session.expiresAt <= Date.now()) {
+        if (session.expiresAt <= this.now()) {
             collection.delete(id);
             return null;
         }
@@ -81,7 +122,7 @@ class SessionAuth {
     }
 
     pruneSessions(collection) {
-        const now = Date.now();
+        const now = this.now();
         for (const [id, session] of collection) {
             if (session.expiresAt <= now) collection.delete(id);
         }
@@ -91,6 +132,7 @@ class SessionAuth {
     }
 
     destroyManageSession(request) {
+        if (this.sessionSecret) return;
         const id = parseCookies(request.headers.cookie).wi_manage_session;
         if (id) this.manageSessions.delete(id);
     }

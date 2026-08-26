@@ -145,10 +145,10 @@ function clientAddress(request) {
     return request.socket.remoteAddress || "local";
 }
 
-function checkRateLimit(request, action, limit, windowMs, discriminator = "") {
+async function checkRateLimit(request, action, limit, windowMs, discriminator = "") {
     const source = discriminator || clientAddress(request);
     const key = crypto.createHash("sha256").update(`${action}:${source}`).digest("hex");
-    const allowed = store.consumeRateLimit({
+    const allowed = await store.consumeRateLimit({
         id: crypto.randomUUID(),
         key,
         action,
@@ -186,7 +186,7 @@ function setSecurityHeaders(response, pathname) {
     if (isProduction) response.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
 }
 
-function serveStatic(pathname, response) {
+async function serveStatic(pathname, response) {
     let decoded;
     try {
         decoded = decodeURIComponent(pathname);
@@ -212,10 +212,13 @@ function serveStatic(pathname, response) {
         "X-Content-Type-Options": "nosniff"
     };
     if (path.extname(filePath).toLowerCase() === ".html") {
-        const state = service.getOnlineBookingState();
+        const state = await service.getOnlineBookingState();
         const html = fs.readFileSync(filePath, "utf8").replace(
-            /<html\b/,
-            `<html data-online-bookings="${state.enabled ? "open" : "closed"}"`
+            /<html\b([^>]*)>/,
+            (_match, attributes) => `<html${attributes.replace(
+                /\sdata-online-bookings=(?:"[^"]*"|'[^']*')/,
+                ""
+            )} data-online-bookings="${state.enabled ? "open" : "closed"}">`
         );
         response.writeHead(200, headers);
         response.end(html);
@@ -231,13 +234,13 @@ async function handleApi(request, response, url) {
     const requestId = response.getHeader("X-Request-Id");
 
     if (request.method === "GET" && pathname === "/api/booking-status") {
-        const state = service.getOnlineBookingState();
+        const state = await service.getOnlineBookingState();
         return sendJson(response, 200, { enabled: state.enabled });
     }
 
     if (request.method === "GET" && pathname === "/api/admin/session") {
         const session = await auth.requireAdmin(request, "bookings:read");
-        store.insertAdminEvent({
+        await store.insertAdminEvent({
             id: crypto.randomUUID(), actor: session.actor, action: "admin_identity_verified",
             target_type: "session", target_id: session.identityId, details: "", request_id: requestId,
             created_at: new Date().toISOString()
@@ -251,7 +254,7 @@ async function handleApi(request, response, url) {
     if (request.method === "DELETE" && pathname === "/api/admin/session") {
         const session = await auth.requireAdmin(request, "bookings:read");
         auth.assertSameOrigin(request);
-        store.insertAdminEvent({
+        await store.insertAdminEvent({
             id: crypto.randomUUID(), actor: session.actor, action: "admin_logout",
             target_type: "session", target_id: null, details: "", request_id: requestId,
             created_at: new Date().toISOString()
@@ -287,7 +290,7 @@ async function handleApi(request, response, url) {
         return sendJson(
             response,
             200,
-            service.getPublicAvailability(searchParams.get("date"), searchParams.get("partySize"))
+            await service.getPublicAvailability(searchParams.get("date"), searchParams.get("partySize"))
         );
     }
 
@@ -296,7 +299,7 @@ async function handleApi(request, response, url) {
         return sendJson(
             response,
             200,
-            service.getManagedAvailabilityById(
+            await service.getManagedAvailabilityById(
                 session.bookingId,
                 searchParams.get("date"),
                 searchParams.get("partySize")
@@ -305,7 +308,7 @@ async function handleApi(request, response, url) {
     }
 
     if (request.method === "POST" && pathname === "/api/bookings") {
-        checkRateLimit(request, "booking-ip", 5, 15 * 60 * 1000);
+        await checkRateLimit(request, "booking-ip", 5, 15 * 60 * 1000);
         const input = await readJson(request);
         if (input.company) {
             return sendJson(response, 201, {
@@ -313,8 +316,8 @@ async function handleApi(request, response, url) {
                 emailStatus: "preview"
             });
         }
-        checkRateLimit(request, "booking-email", 3, 60 * 60 * 1000, String(input.email || "").trim().toLowerCase());
-        checkRateLimit(request, "booking-phone", 3, 60 * 60 * 1000, String(input.phone || "").replace(/\D/g, ""));
+        await checkRateLimit(request, "booking-email", 3, 60 * 60 * 1000, String(input.email || "").trim().toLowerCase());
+        await checkRateLimit(request, "booking-phone", 3, 60 * 60 * 1000, String(input.phone || "").replace(/\D/g, ""));
         const result = await service.createBooking(input, {
             idempotencyKey: request.headers["idempotency-key"]
         });
@@ -323,9 +326,9 @@ async function handleApi(request, response, url) {
 
     if (request.method === "POST" && pathname === "/api/manage-session") {
         auth.assertSameOrigin(request);
-        checkRateLimit(request, "manage-exchange", 10, 15 * 60 * 1000);
+        await checkRateLimit(request, "manage-exchange", 10, 15 * 60 * 1000);
         const input = await readJson(request);
-        const exchange = service.exchangeManageToken(input.token);
+        const exchange = await service.exchangeManageToken(input.token);
         const session = auth.createManageSession(exchange.bookingId);
         return sendJson(response, 200, {
             managed: exchange.managed,
@@ -336,21 +339,21 @@ async function handleApi(request, response, url) {
     if (request.method === "GET" && pathname === "/api/manage-session") {
         const session = auth.requireManage(request);
         return sendJson(response, 200, {
-            managed: service.getManagedBookingById(session.bookingId),
+            managed: await service.getManagedBookingById(session.bookingId),
             csrfToken: session.csrf
         });
     }
 
     if (request.method === "GET" && pathname === "/api/manage-booking") {
         const session = auth.requireManage(request);
-        return sendJson(response, 200, service.getManagedBookingById(session.bookingId));
+        return sendJson(response, 200, await service.getManagedBookingById(session.bookingId));
     }
 
     if (request.method === "POST" && pathname === "/api/confirm-booking") {
         const session = auth.requireManage(request);
         auth.requireCsrf(request, session);
         await readJson(request);
-        return sendJson(response, 200, service.confirmBookingById(session.bookingId));
+        return sendJson(response, 200, await service.confirmBookingById(session.bookingId));
     }
 
     if (request.method === "PATCH" && pathname === "/api/amend-booking") {
@@ -370,10 +373,10 @@ async function handleApi(request, response, url) {
     }
 
     if (request.method === "POST" && pathname === "/api/waitlist") {
-        checkRateLimit(request, "waitlist-ip", 5, 15 * 60 * 1000);
+        await checkRateLimit(request, "waitlist-ip", 5, 15 * 60 * 1000);
         const input = await readJson(request);
         if (input.company) return sendJson(response, 201, { entry: { status: "waiting" } });
-        checkRateLimit(request, "waitlist-contact", 3, 60 * 60 * 1000,
+        await checkRateLimit(request, "waitlist-contact", 3, 60 * 60 * 1000,
             `${String(input.email || "").trim().toLowerCase()}:${String(input.phone || "").replace(/\D/g, "")}`);
         const result = await service.createWaitlistEntry(input, {
             idempotencyKey: request.headers["idempotency-key"]
@@ -385,15 +388,15 @@ async function handleApi(request, response, url) {
     }
 
     if (request.method === "GET" && pathname === "/api/admin/diary") {
-        return sendJson(response, 200, service.listDiary(searchParams.get("date")));
+        return sendJson(response, 200, await service.listDiary(searchParams.get("date")));
     }
 
     if (request.method === "GET" && pathname === "/api/admin/calendar") {
-        return sendJson(response, 200, service.listCalendar(searchParams.get("month")));
+        return sendJson(response, 200, await service.listCalendar(searchParams.get("month")));
     }
 
     if (request.method === "GET" && pathname === "/api/admin/booking-settings") {
-        return sendJson(response, 200, service.getOnlineBookingState());
+        return sendJson(response, 200, await service.getOnlineBookingState());
     }
 
     if (request.method === "PATCH" && pathname === "/api/admin/booking-settings") {
@@ -406,9 +409,9 @@ async function handleApi(request, response, url) {
                 code: "VALIDATION_ERROR"
             });
         }
-        if (hasEnabled) service.setOnlineBookingsEnabled(input.enabled, audit());
-        if (hasMaxCovers) service.setMaxOnlineCovers(input.maxCovers, audit());
-        return sendJson(response, 200, service.getOnlineBookingState());
+        if (hasEnabled) await service.setOnlineBookingsEnabled(input.enabled, audit());
+        if (hasMaxCovers) await service.setMaxOnlineCovers(input.maxCovers, audit());
+        return sendJson(response, 200, await service.getOnlineBookingState());
     }
 
     if (request.method === "POST" && pathname === "/api/admin/bookings") {
@@ -459,7 +462,7 @@ async function handleApi(request, response, url) {
         return sendJson(
             response,
             200,
-            service.setCallConfirmation(
+            await service.setCallConfirmation(
                 decodeURIComponent(callConfirmationMatch[1]),
                 input.confirmed,
                 audit()
@@ -500,12 +503,12 @@ async function handleApi(request, response, url) {
         return sendJson(
             response,
             200,
-            service.updateWaitlistStatus(decodeURIComponent(waitlistMatch[1]), input.status, audit())
+            await service.updateWaitlistStatus(decodeURIComponent(waitlistMatch[1]), input.status, audit())
         );
     }
 
     if (request.method === "POST" && pathname === "/api/admin/blocks") {
-        return sendJson(response, 201, { block: service.createBlock(await readJson(request), audit()) });
+        return sendJson(response, 201, { block: await service.createBlock(await readJson(request), audit()) });
     }
 
     const blockMatch = pathname.match(/^\/api\/admin\/blocks\/([^/]+)$/);
@@ -513,16 +516,16 @@ async function handleApi(request, response, url) {
         return sendJson(
             response,
             200,
-            service.removeBlock(decodeURIComponent(blockMatch[1]), audit())
+            await service.removeBlock(decodeURIComponent(blockMatch[1]), audit())
         );
     }
 
     const emailMatch = pathname.match(/^\/api\/admin\/emails\/([^/]+)$/);
     if (request.method === "GET" && emailMatch) {
         const emailId = decodeURIComponent(emailMatch[1]);
-        const email = store.getEmail(emailId) || store.getWaitlistEmail(emailId);
+        const email = await store.getEmail(emailId) || await store.getWaitlistEmail(emailId);
         if (!email) throw Object.assign(new Error("Email preview not found."), { status: 404 });
-        store.insertAdminEvent({
+        await store.insertAdminEvent({
             id: crypto.randomUUID(), actor: adminSession.actor, action: "email_preview_viewed",
             target_type: "email", target_id: emailId, details: "", request_id: requestId,
             created_at: new Date().toISOString()
@@ -556,7 +559,7 @@ const server = http.createServer(async (request, response) => {
         if (url.pathname.startsWith("/api/")) {
             return await handleApi(request, response, url);
         }
-        if (request.method === "GET" && serveStatic(url.pathname, response)) return;
+        if (request.method === "GET" && await serveStatic(url.pathname, response)) return;
         response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
         response.end("Not found");
     } catch (error) {
@@ -582,9 +585,9 @@ async function prepareDueReminders() {
 const reminderTimer = setInterval(prepareDueReminders, 60 * 1000);
 reminderTimer.unref();
 
-function applyRetention() {
+async function applyRetention() {
     try {
-        const result = service.runRetention();
+        const result = await service.runRetention();
         const changed = Object.values(result).reduce((total, value) => total + Number(value || 0), 0);
         if (changed) console.log(`Applied booking-data retention to ${changed} stored record${changed === 1 ? "" : "s"}.`);
     } catch (error) {
@@ -595,11 +598,11 @@ function applyRetention() {
 const retentionTimer = setInterval(applyRetention, 24 * 60 * 60 * 1000);
 retentionTimer.unref();
 
-server.listen(port, host, () => {
+server.listen(port, host, async () => {
     console.log(`Waterloo booking prototype: http://${host}:${port}`);
     console.log(`Booking diary: http://${host}:${port}/admin/bookings/`);
     console.log(`Database: ${databasePath}`);
-    console.log(`Online bookings: ${service.getOnlineBookingState().enabled ? "enabled" : "disabled"}.`);
+    console.log(`Online bookings: ${(await service.getOnlineBookingState()).enabled ? "enabled" : "disabled"}.`);
     if (!process.env.RESEND_API_KEY) {
         console.log("Email mode: local previews in the booking diary (nothing is sent).");
     }

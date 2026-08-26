@@ -116,3 +116,28 @@ test("admin mutations and customer sessions retain same-origin CSRF controls", (
     const managed = auth.requireManage(request({ cookie: `wi_manage_session=${session.id}` }));
     assert.equal(managed.bookingId, "booking-1");
 });
+
+test("signed customer sessions survive function restarts and reject tampering or expiry", () => {
+    let now = Date.now();
+    const options = {
+        publicUrl: "https://example.com",
+        sessionSecret: "a-long-random-test-secret-that-is-at-least-32-characters",
+        manageTtlMs: 60_000,
+        now: () => now
+    };
+    const firstInstance = new SessionAuth(options);
+    const session = firstInstance.createManageSession("booking-2");
+    const cookie = `wi_manage_session=${encodeURIComponent(session.id)}`;
+
+    const restartedInstance = new SessionAuth(options);
+    assert.equal(restartedInstance.requireManage(request({ cookie })).bookingId, "booking-2");
+
+    const tampered = `${session.id.slice(0, -1)}${session.id.endsWith("a") ? "b" : "a"}`;
+    assert.throws(
+        () => restartedInstance.requireManage(request({ cookie: `wi_manage_session=${tampered}` })),
+        /expired/
+    );
+
+    now += 60_001;
+    assert.throws(() => restartedInstance.requireManage(request({ cookie })), /expired/);
+});

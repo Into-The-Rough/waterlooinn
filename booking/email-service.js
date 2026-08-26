@@ -133,7 +133,7 @@ class EmailService {
     async deliver({ booking, kind, recipient, subject, html }) {
         const id = crypto.randomUUID();
         const createdAt = new Date().toISOString();
-        this.store.insertEmail({
+        await this.store.insertEmail({
             id,
             booking_id: booking.id,
             kind,
@@ -155,7 +155,7 @@ class EmailService {
 
     async deliverWaitlist({ entry, kind, recipient, subject, html }) {
         const id = crypto.randomUUID();
-        this.store.insertWaitlistEmail({
+        await this.store.insertWaitlistEmail({
             id,
             waitlist_id: entry.id,
             kind,

@@ -12,6 +12,21 @@
         return;
     }
 
+    // The booking links start hidden in the HTML and are only revealed after
+    // the durable server-side master switch has been checked successfully.
+    fetch('/api/booking-status', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+    }).then(function (response) {
+        if (!response.ok) throw new Error('Booking status unavailable');
+        return response.json();
+    }).then(function (state) {
+        document.documentElement.dataset.onlineBookings = state.enabled ? 'open' : 'closed';
+    }).catch(function () {
+        document.documentElement.dataset.onlineBookings = 'closed';
+    });
+
     // --- Header scroll effect ---
     const header = document.getElementById('header');
 

@@ -127,9 +127,9 @@ class BookingService {
         ).toISOString();
     }
 
-    issueManageToken(booking) {
+    async issueManageToken(booking) {
         const credential = this.createManageCredential(booking);
-        this.activateManageCredential(booking.id, credential);
+        await this.activateManageCredential(booking.id, credential);
         return credential.rawToken;
     }
 
@@ -142,8 +142,8 @@ class BookingService {
         };
     }
 
-    activateManageCredential(bookingId, credential) {
-        this.store.updateBooking(bookingId, {
+    async activateManageCredential(bookingId, credential) {
+        await this.store.updateBooking(bookingId, {
             cancellation_token_hash: credential.hash,
             stable_manage_token_hash: null,
             manage_token_expires_at: credential.expiresAt,
@@ -151,15 +151,15 @@ class BookingService {
         });
     }
 
-    resolveManageToken(token) {
+    async resolveManageToken(token) {
         if (!token || String(token).length > 128) return null;
-        const booking = this.store.getBookingByTokenHash(tokenHash(token));
+        const booking = await this.store.getBookingByTokenHash(tokenHash(token));
         if (!booking || !booking.manage_token_expires_at ||
             Date.parse(booking.manage_token_expires_at) <= this.nowDate().getTime()) return null;
         return booking;
     }
 
-    appendEvent(bookingId, kind, actor, details = "") {
+    async appendEvent(bookingId, kind, actor, details = "") {
         return this.store.insertBookingEvent({
             id: crypto.randomUUID(),
             booking_id: bookingId,
@@ -170,7 +170,7 @@ class BookingService {
         });
     }
 
-    appendAdminEvent(actor, action, targetType, targetId, details = "", requestId = null) {
+    async appendAdminEvent(actor, action, targetType, targetId, details = "", requestId = null) {
         return this.store.insertAdminEvent({
             id: crypto.randomUUID(),
             actor: cleanText(actor || "Admin", 100),
@@ -183,24 +183,30 @@ class BookingService {
         });
     }
 
-    getOnlineBookingState() {
+    async getOnlineBookingState() {
+        const [enabled, maxCovers, updatedAt, updatedBy] = await Promise.all([
+            this.store.getAppMeta("online_bookings_enabled", "false"),
+            this.getMaxOnlineCovers(),
+            this.store.getAppMeta("online_bookings_updated_at"),
+            this.store.getAppMeta("online_bookings_updated_by")
+        ]);
         return {
-            enabled: this.store.getAppMeta("online_bookings_enabled", "false") === "true",
-            maxCovers: this.getMaxOnlineCovers(),
-            updatedAt: this.store.getAppMeta("online_bookings_updated_at") || null,
-            updatedBy: this.store.getAppMeta("online_bookings_updated_by") || null
+            enabled: enabled === "true",
+            maxCovers,
+            updatedAt: updatedAt || null,
+            updatedBy: updatedBy || null
         };
     }
 
-    getMaxOnlineCovers() {
-        const stored = Number(this.store.getAppMeta("max_online_covers", BOOKING_CONFIG.maxOnlineCovers));
+    async getMaxOnlineCovers() {
+        const stored = Number(await this.store.getAppMeta("max_online_covers", BOOKING_CONFIG.maxOnlineCovers));
         return Number.isInteger(stored) && stored >= 1 && stored <= 500
             ? stored
             : BOOKING_CONFIG.maxOnlineCovers;
     }
 
-    requireOnlineBookingsEnabled() {
-        if (this.getOnlineBookingState().enabled) return;
+    async requireOnlineBookingsEnabled() {
+        if ((await this.getOnlineBookingState()).enabled) return;
         throw Object.assign(new Error(
             "Online booking is temporarily unavailable. Please call us on 01298 463248."
         ), {
@@ -209,19 +215,19 @@ class BookingService {
         });
     }
 
-    setOnlineBookingsEnabled(enabled, audit = {}) {
+    async setOnlineBookingsEnabled(enabled, audit = {}) {
         if (typeof enabled !== "boolean") {
             throw validationError("Please provide a valid online booking state.", "enabled");
         }
-        const current = this.getOnlineBookingState();
+        const current = await this.getOnlineBookingState();
         if (current.enabled === enabled) return current;
         const actor = cleanText(audit.actor || "Admin", 100);
         const updatedAt = this.nowIso();
-        this.store.transaction(() => {
-            this.store.setAppMeta("online_bookings_enabled", enabled ? "true" : "false");
-            this.store.setAppMeta("online_bookings_updated_at", updatedAt);
-            this.store.setAppMeta("online_bookings_updated_by", actor);
-            this.appendAdminEvent(
+        await this.store.transaction(async () => {
+            await this.store.setAppMeta("online_bookings_enabled", enabled ? "true" : "false");
+            await this.store.setAppMeta("online_bookings_updated_at", updatedAt);
+            await this.store.setAppMeta("online_bookings_updated_by", actor);
+            await this.appendAdminEvent(
                 actor,
                 enabled ? "online_bookings_enabled" : "online_bookings_disabled",
                 "booking_settings",
@@ -233,19 +239,19 @@ class BookingService {
         return this.getOnlineBookingState();
     }
 
-    setMaxOnlineCovers(value, audit = {}) {
+    async setMaxOnlineCovers(value, audit = {}) {
         const maxCovers = Number(value);
         if (!Number.isInteger(maxCovers) || maxCovers < 1 || maxCovers > 500) {
             throw validationError("Peak cover capacity must be a whole number between 1 and 500.", "maxCovers");
         }
-        if (this.getMaxOnlineCovers() === maxCovers) return this.getOnlineBookingState();
+        if (await this.getMaxOnlineCovers() === maxCovers) return this.getOnlineBookingState();
         const actor = cleanText(audit.actor || "Admin", 100);
         const updatedAt = this.nowIso();
-        this.store.transaction(() => {
-            this.store.setAppMeta("max_online_covers", maxCovers);
-            this.store.setAppMeta("online_bookings_updated_at", updatedAt);
-            this.store.setAppMeta("online_bookings_updated_by", actor);
-            this.appendAdminEvent(
+        await this.store.transaction(async () => {
+            await this.store.setAppMeta("max_online_covers", maxCovers);
+            await this.store.setAppMeta("online_bookings_updated_at", updatedAt);
+            await this.store.setAppMeta("online_bookings_updated_by", actor);
+            await this.appendAdminEvent(
                 actor,
                 "online_capacity_changed",
                 "booking_settings",
@@ -281,10 +287,10 @@ class BookingService {
         return partySize;
     }
 
-    overlappingCovers(date, time, durationMinutes, excludeId = "") {
+    async overlappingCovers(date, time, durationMinutes, excludeId = "") {
         const start = timeToMinutes(time);
         const end = start + durationMinutes;
-        return this.store.listActiveBookings(date, excludeId, this.nowIso()).reduce((total, booking) => {
+        return (await this.store.listActiveBookings(date, excludeId, this.nowIso())).reduce((total, booking) => {
             const bookingStart = timeToMinutes(booking.booking_time);
             const bookingEnd = bookingStart + booking.duration_minutes;
             return bookingStart < end && bookingEnd > start
@@ -293,17 +299,18 @@ class BookingService {
         }, 0);
     }
 
-    getAvailability(date, partySizeValue, excludeId = "") {
-        this.store.expirePendingHolds(this.nowIso());
+    async getAvailability(date, partySizeValue, excludeId = "") {
+        await this.store.expirePendingHolds(this.nowIso());
         const validDate = this.validateDate(date);
         const partySize = this.validatePartySize(partySizeValue);
         const current = venueNow(this.nowDate());
-        const blocks = this.store.listBlocks(validDate);
+        const blocks = await this.store.listBlocks(validDate);
         const blockedTimes = new Set(blocks.map((block) => block.booking_time));
         const wholeDayBlocked = blockedTimes.has("*");
-        const maxOnlineCovers = this.getMaxOnlineCovers();
-        const slots = generateSlots(validDate).map((time) => {
-            const usedCovers = this.overlappingCovers(
+        const maxOnlineCovers = await this.getMaxOnlineCovers();
+        const slots = [];
+        for (const time of generateSlots(validDate)) {
+            const usedCovers = await this.overlappingCovers(
                 validDate,
                 time,
                 BOOKING_CONFIG.durationMinutes,
@@ -318,15 +325,15 @@ class BookingService {
             if (tooSoon) reason = "Online booking has closed for this time";
             else if (blocked) reason = "Unavailable";
             else if (remainingCovers < partySize) reason = "Not enough availability";
-            return {
+            slots.push({
                 time,
                 label: formatTime(time),
                 available,
                 waitlistEligible: !tooSoon && !blocked && !available,
                 remainingCovers,
                 reason
-            };
-        });
+            });
+        }
         return {
             date: validDate,
             partySize,
@@ -337,19 +344,19 @@ class BookingService {
         };
     }
 
-    getPublicAvailability(date, partySizeValue) {
-        this.requireOnlineBookingsEnabled();
+    async getPublicAvailability(date, partySizeValue) {
+        await this.requireOnlineBookingsEnabled();
         return this.getAvailability(date, partySizeValue);
     }
 
-    getManagedAvailability(token, date, partySize) {
-        const booking = this.resolveManageToken(token);
+    async getManagedAvailability(token, date, partySize) {
+        const booking = await this.resolveManageToken(token);
         if (!booking) throw Object.assign(new Error("This booking link is invalid or has expired."), { status: 404, code: "NOT_FOUND" });
         return this.getManagedAvailabilityById(booking.id, date, partySize);
     }
 
-    getManagedAvailabilityById(id, date, partySize) {
-        const managed = this.getManagedBookingById(id);
+    async getManagedAvailabilityById(id, date, partySize) {
+        const managed = await this.getManagedBookingById(id);
         if (!managed.canAmend) {
             throw validationError("This booking can no longer be changed online.", null, "CANNOT_AMEND");
         }
@@ -407,7 +414,7 @@ class BookingService {
         actor = "Admin",
         requestId = null
     } = {}) {
-        if (!admin) this.requireOnlineBookingsEnabled();
+        if (!admin) await this.requireOnlineBookingsEnabled();
         const value = this.normaliseInput(input, { admin });
         if (!admin && value.emailSuggestion && input.acceptEmailSuggestion !== true) {
             throw Object.assign(
@@ -430,14 +437,14 @@ class BookingService {
             ? new Date(this.nowDate().getTime() + (BOOKING_CONFIG.verificationHoldMinutes * 60 * 1000)).toISOString()
             : null;
         let replayed = false;
-        const booking = this.store.transaction(() => {
-            const duplicate = this.store.getBookingByIdempotencyKey(idempotencyKey);
+        const booking = await this.store.transaction(async () => {
+            const duplicate = await this.store.getBookingByIdempotencyKey(idempotencyKey);
             if (duplicate) {
                 replayed = true;
                 return duplicate;
             }
             if (!admin) {
-                const availability = this.getAvailability(value.date, value.partySize);
+                const availability = await this.getAvailability(value.date, value.partySize);
                 const chosen = availability.slots.find((slot) => slot.time === value.time);
                 if (!chosen?.available) {
                     throw validationError(
@@ -447,12 +454,12 @@ class BookingService {
                     );
                 }
             } else if (!overrideCapacity) {
-                const used = this.overlappingCovers(
+                const used = await this.overlappingCovers(
                     value.date,
                     value.time,
                     BOOKING_CONFIG.durationMinutes
                 );
-                if (used + value.partySize > this.getMaxOnlineCovers()) {
+                if (used + value.partySize > await this.getMaxOnlineCovers()) {
                     throw validationError(
                         "This booking would exceed the current online cover limit. Use the override if the pub can accommodate it.",
                         "partySize",
@@ -460,7 +467,7 @@ class BookingService {
                     );
                 }
             }
-            const inserted = this.store.insertBooking({
+            const inserted = await this.store.insertBooking({
                 id,
                 reference: this.createReference(value.date),
                 booking_date: value.date,
@@ -488,12 +495,9 @@ class BookingService {
                 reminder_claimed_at: null,
                 hold_expires_at: holdExpiresAt,
                 area: value.area,
-                table_label: value.tableLabel,
-                deposit_amount_pence: 0,
-                deposit_status: "not_required",
-                deposit_paid_at: null
+                table_label: value.tableLabel
             });
-            this.store.insertBookingEvent({
+            await this.store.insertBookingEvent({
                 id: crypto.randomUUID(),
                 booking_id: id,
                 kind: "booking_created",
@@ -513,17 +517,17 @@ class BookingService {
             };
         }
 
-        if (admin) this.appendAdminEvent(actor, "booking_created", "booking", booking.id, "", requestId);
+        if (admin) await this.appendAdminEvent(actor, "booking_created", "booking", booking.id, "", requestId);
 
-        this.store.updateBooking(booking.id, {
+        await this.store.updateBooking(booking.id, {
             manage_token_expires_at: this.tokenExpiryForBooking(booking),
             updated_at: now
         });
 
-        const emails = await this.mailer.sendBookingEmails(this.store.getBooking(booking.id), rawToken);
+        const emails = await this.mailer.sendBookingEmails(await this.store.getBooking(booking.id), rawToken);
         const customerEmail = emails.find((email) => email.kind === "customer_confirmation");
         const emailStatus = customerEmail?.status || emails[0]?.status || "pending";
-        const updated = this.store.updateBooking(booking.id, {
+        const updated = await this.store.updateBooking(booking.id, {
             email_status: emailStatus,
             updated_at: this.nowIso()
         });
@@ -534,14 +538,14 @@ class BookingService {
         };
     }
 
-    getManagedBooking(token) {
-        const booking = this.resolveManageToken(token);
+    async getManagedBooking(token) {
+        const booking = await this.resolveManageToken(token);
         if (!booking) throw Object.assign(new Error("This booking link is invalid or has expired."), { status: 404, code: "NOT_FOUND" });
         return this.getManagedBookingById(booking.id);
     }
 
-    getManagedBookingById(id) {
-        const booking = this.store.getBooking(id);
+    async getManagedBookingById(id) {
+        const booking = await this.store.getBooking(id);
         if (!booking) throw Object.assign(new Error("This booking is unavailable."), { status: 404, code: "NOT_FOUND" });
         const current = venueNow(this.nowDate());
         const inFuture = dateDistance(current.date, booking.booking_date) > 0 ||
@@ -558,38 +562,38 @@ class BookingService {
         };
     }
 
-    exchangeManageToken(token) {
-        const booking = this.resolveManageToken(token);
+    async exchangeManageToken(token) {
+        const booking = await this.resolveManageToken(token);
         if (!booking) throw Object.assign(new Error("This booking link is invalid or has expired."), { status: 404, code: "NOT_FOUND" });
-        return { bookingId: booking.id, managed: this.getManagedBookingById(booking.id) };
+        return { bookingId: booking.id, managed: await this.getManagedBookingById(booking.id) };
     }
 
-    confirmBooking(token) {
-        const booking = this.resolveManageToken(token);
+    async confirmBooking(token) {
+        const booking = await this.resolveManageToken(token);
         if (!booking) throw Object.assign(new Error("This booking link is invalid or has expired."), { status: 404, code: "NOT_FOUND" });
         return this.confirmBookingById(booking.id);
     }
 
-    confirmBookingById(id) {
-        const managed = this.getManagedBookingById(id);
+    async confirmBookingById(id) {
+        const managed = await this.getManagedBookingById(id);
         if (!managed.canConfirm) {
             throw validationError("This booking can no longer be confirmed online.", null, "CANNOT_CONFIRM");
         }
         if (managed.booking.customerConfirmedAt) return managed;
         const now = this.nowIso();
-        const updated = this.store.transaction(() => {
-            const current = this.store.getBooking(id);
-            const currentManaged = this.getManagedBookingById(id);
+        const updated = await this.store.transaction(async () => {
+            const current = await this.store.getBooking(id);
+            const currentManaged = await this.getManagedBookingById(id);
             if (!currentManaged.canConfirm) {
                 throw validationError("This booking can no longer be confirmed online.", null, "CANNOT_CONFIRM");
             }
-            const changed = this.store.updateBooking(id, {
+            const changed = await this.store.updateBooking(id, {
                 status: current.status === "pending" ? "confirmed" : current.status,
                 hold_expires_at: null,
                 customer_confirmed_at: now,
                 updated_at: now
             });
-            this.store.insertBookingEvent({
+            await this.store.insertBookingEvent({
                 id: crypto.randomUUID(),
                 booking_id: id,
                 kind: "customer_confirmed",
@@ -608,17 +612,17 @@ class BookingService {
     }
 
     async amendBooking(token, input) {
-        const booking = this.resolveManageToken(token);
+        const booking = await this.resolveManageToken(token);
         if (!booking) throw Object.assign(new Error("This booking link is invalid or has expired."), { status: 404, code: "NOT_FOUND" });
         return this.amendBookingById(booking.id, input, token);
     }
 
     async amendBookingById(id, input, manageToken = null) {
-        const managed = this.getManagedBookingById(id);
+        const managed = await this.getManagedBookingById(id);
         if (!managed.canAmend) {
             throw validationError("This booking can no longer be changed online.", null, "CANNOT_AMEND");
         }
-        const existing = this.store.getBooking(id);
+        const existing = await this.store.getBooking(id);
         const value = this.normaliseInput({
             date: input.date ?? existing.booking_date,
             time: input.time ?? existing.booking_time,
@@ -628,7 +632,7 @@ class BookingService {
             phone: existing.phone,
             requests: input.requests ?? existing.requests
         });
-        const availability = this.getAvailability(value.date, value.partySize, existing.id);
+        const availability = await this.getAvailability(value.date, value.partySize, existing.id);
         const chosen = availability.slots.find((slot) => slot.time === value.time);
         if (!chosen?.available) {
             throw validationError(
@@ -639,8 +643,8 @@ class BookingService {
         }
         const now = this.nowIso();
         const details = `${existing.booking_date} ${existing.booking_time}, ${existing.party_size} guests → ${value.date} ${value.time}, ${value.partySize} guests`;
-        const updated = this.store.transaction(() => {
-            const transactionalAvailability = this.getAvailability(value.date, value.partySize, existing.id);
+        const updated = await this.store.transaction(async () => {
+            const transactionalAvailability = await this.getAvailability(value.date, value.partySize, existing.id);
             const transactionalChoice = transactionalAvailability.slots.find((slot) => slot.time === value.time);
             if (!transactionalChoice?.available) {
                 throw validationError(
@@ -649,7 +653,7 @@ class BookingService {
                     "SLOT_UNAVAILABLE"
                 );
             }
-            const changed = this.store.updateBooking(existing.id, {
+            const changed = await this.store.updateBooking(existing.id, {
                 booking_date: value.date,
                 booking_time: value.time,
                 party_size: value.partySize,
@@ -658,7 +662,7 @@ class BookingService {
                 reminder_sent_at: null,
                 updated_at: now
             });
-            this.store.insertBookingEvent({
+            await this.store.insertBookingEvent({
                 id: crypto.randomUUID(),
                 booking_id: existing.id,
                 kind: "customer_amended",
@@ -670,13 +674,13 @@ class BookingService {
         });
         const credential = manageToken ? null : this.createManageCredential(updated);
         const emailToken = manageToken || credential.rawToken;
-        const emails = await this.mailer.sendAmendmentEmails(this.store.getBooking(id), emailToken);
+        const emails = await this.mailer.sendAmendmentEmails(await this.store.getBooking(id), emailToken);
         const customerEmail = emails.find((email) => email.kind === "customer_amendment");
         if (credential && customerEmail && customerEmail.status !== "failed") {
-            this.activateManageCredential(id, credential);
+            await this.activateManageCredential(id, credential);
         }
         if (customerEmail) {
-            this.store.updateBooking(updated.id, {
+            await this.store.updateBooking(updated.id, {
                 email_status: customerEmail.status,
                 updated_at: this.nowIso()
             });
@@ -685,19 +689,19 @@ class BookingService {
     }
 
     async cancelBooking(token) {
-        const booking = this.resolveManageToken(token);
+        const booking = await this.resolveManageToken(token);
         if (!booking) throw Object.assign(new Error("This booking link is invalid or has expired."), { status: 404, code: "NOT_FOUND" });
         return this.cancelBookingById(booking.id);
     }
 
     async cancelBookingById(id) {
         const now = this.nowIso();
-        const updated = this.store.transaction(() => {
-            const managed = this.getManagedBookingById(id);
+        const updated = await this.store.transaction(async () => {
+            const managed = await this.getManagedBookingById(id);
             if (!managed.canCancel) {
                 throw validationError("This booking can no longer be cancelled online.", null, "CANNOT_CANCEL");
             }
-            const changed = this.store.updateBooking(id, {
+            const changed = await this.store.updateBooking(id, {
                 status: "cancelled",
                 cancelled_at: now,
                 updated_at: now,
@@ -705,7 +709,7 @@ class BookingService {
                 stable_manage_token_hash: null,
                 manage_token_expires_at: null
             });
-            this.store.insertBookingEvent({
+            await this.store.insertBookingEvent({
                 id: crypto.randomUUID(),
                 booking_id: id,
                 kind: "booking_cancelled",
@@ -720,8 +724,8 @@ class BookingService {
         return { booking: customerBooking(updated) };
     }
 
-    guestHistoryFor(booking) {
-        const rows = this.store.listBookingsByContact(
+    async guestHistoryFor(booking) {
+        const rows = await this.store.listBookingsByContact(
             booking.email || "",
             booking.phone || "",
             booking.id
@@ -756,14 +760,20 @@ class BookingService {
         };
     }
 
-    listDiary(date) {
+    async listDiary(date) {
         this.validateDate(date, { allowPast: true, allowClosedDay: true });
-        this.store.expirePendingHolds(this.nowIso());
-        const rows = this.store.listBookings(date);
-        const blocks = this.store.listBlocks(date);
-        const bookings = rows.map((row) => {
-            const emails = this.store.listEmailsForBooking(row.id);
-            const auditEvents = this.store.listBookingEvents(row.id);
+        await this.store.expirePendingHolds(this.nowIso());
+        const [rows, blocks, waitlistRows] = await Promise.all([
+            this.store.listBookings(date),
+            this.store.listBlocks(date),
+            this.store.listWaitlist(date)
+        ]);
+        const bookings = await Promise.all(rows.map(async (row) => {
+            const [emails, auditEvents, guestHistory] = await Promise.all([
+                this.store.listEmailsForBooking(row.id),
+                this.store.listBookingEvents(row.id),
+                this.guestHistoryFor(row)
+            ]);
             const booking = publicBooking(row);
             const attention = {
                 unconfirmed: ACTIVE_STATUSES.has(row.status) && !row.call_confirmed_at && !row.customer_confirmed_at,
@@ -774,25 +784,26 @@ class BookingService {
             return {
                 ...booking,
                 attention,
-                guestHistory: this.guestHistoryFor(row),
+                guestHistory,
                 emails: emails.map((email) => ({
                     ...email,
                     previewUrl: `/admin/bookings/email-preview/?id=${encodeURIComponent(email.id)}`
                 })),
                 auditEvents: auditEvents.map((event) => this.eventForAdmin(event))
             };
-        });
-        const waitlist = this.store.listWaitlist(date).map((row) => ({
+        }));
+        const waitlist = await Promise.all(waitlistRows.map(async (row) => ({
             ...publicWaitlistEntry(row),
-            emails: this.store.listWaitlistEmails(row.id).map((email) => ({
+            emails: (await this.store.listWaitlistEmails(row.id)).map((email) => ({
                 ...email,
                 previewUrl: `/admin/bookings/email-preview/?id=${encodeURIComponent(email.id)}`
             }))
-        }));
+        })));
         const active = bookings.filter((booking) => ACTIVE_STATUSES.has(booking.status));
-        const peakCovers = generateSlots(date).reduce((peak, time) => {
-            return Math.max(peak, this.overlappingCovers(date, time, BOOKING_CONFIG.durationMinutes));
-        }, 0);
+        const coverCounts = await Promise.all(generateSlots(date).map((time) =>
+            this.overlappingCovers(date, time, BOOKING_CONFIG.durationMinutes)
+        ));
+        const peakCovers = Math.max(0, ...coverCounts);
         const attentionCounts = {
             unconfirmed: bookings.filter((booking) => booking.attention.unconfirmed).length,
             emailFailed: bookings.filter((booking) => booking.attention.emailFailed).length,
@@ -800,7 +811,7 @@ class BookingService {
             specialRequest: bookings.filter((booking) => booking.attention.specialRequest).length,
             waiting: waitlist.filter((entry) => entry.status === "waiting").length
         };
-        const maxOnlineCovers = this.getMaxOnlineCovers();
+        const maxOnlineCovers = await this.getMaxOnlineCovers();
         return {
             date,
             config: {
@@ -823,7 +834,7 @@ class BookingService {
         };
     }
 
-    listCalendar(month) {
+    async listCalendar(month) {
         if (!/^\d{4}-\d{2}$/.test(String(month || ""))) {
             throw validationError("Please choose a valid month.", "month");
         }
@@ -831,16 +842,16 @@ class BookingService {
         if (monthNumber < 1 || monthNumber > 12) {
             throw validationError("Please choose a valid month.", "month");
         }
-        this.store.expirePendingHolds(this.nowIso());
-        const maxOnlineCovers = this.getMaxOnlineCovers();
+        await this.store.expirePendingHolds(this.nowIso());
+        const maxOnlineCovers = await this.getMaxOnlineCovers();
         const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
         const days = [];
 
         for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber += 1) {
             const date = `${year}-${String(monthNumber).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`;
-            const rows = this.store.listBookings(date);
+            const rows = await this.store.listBookings(date);
             const activeRows = rows.filter((booking) => ACTIVE_STATUSES.has(booking.status));
-            const blocks = this.store.listBlocks(date);
+            const blocks = await this.store.listBlocks(date);
             const serviceRule = getServiceRule(date);
             const candidateTimes = new Set([
                 ...generateSlots(date),
@@ -872,7 +883,8 @@ class BookingService {
                 peakRemaining: Math.max(0, maxOnlineCovers - peakCovers),
                 capacityPercent: Math.min(100, Math.round((peakCovers / maxOnlineCovers) * 100)),
                 cancellationCount: rows.filter((booking) => booking.status === "cancelled").length,
-                waitlistCount: this.store.listWaitlist(date).filter((entry) => entry.status === "waiting").length
+                waitlistCount: (await this.store.listWaitlist(date))
+                    .filter((entry) => entry.status === "waiting").length
             });
         }
 
@@ -893,7 +905,7 @@ class BookingService {
 
     async updateBooking(id, input, audit = {}) {
         const actor = cleanText(audit.actor || "Admin", 100);
-        const existing = this.store.getBooking(id);
+        const existing = await this.store.getBooking(id);
         if (!existing) throw Object.assign(new Error("Booking not found."), { status: 404, code: "NOT_FOUND" });
         const merged = {
             date: input.date ?? existing.booking_date,
@@ -916,13 +928,13 @@ class BookingService {
         }
         const overrideCapacity = input.overrideCapacity === true;
         if (ACTIVE_STATUSES.has(status) && !overrideCapacity) {
-            const used = this.overlappingCovers(
+            const used = await this.overlappingCovers(
                 value.date,
                 value.time,
                 BOOKING_CONFIG.durationMinutes,
                 id
             );
-            if (used + value.partySize > this.getMaxOnlineCovers()) {
+            if (used + value.partySize > await this.getMaxOnlineCovers()) {
                 throw validationError(
                     "This change would exceed the current cover limit.",
                     "partySize",
@@ -965,19 +977,19 @@ class BookingService {
             ["area", value.area, existing.area],
             ["table", value.tableLabel, existing.table_label]
         ].filter(([, next, previous]) => next !== previous).map(([label]) => label);
-        const updated = this.store.transaction(() => {
+        const updated = await this.store.transaction(async () => {
             if (ACTIVE_STATUSES.has(status) && !overrideCapacity) {
-                const transactionalUsed = this.overlappingCovers(
+                const transactionalUsed = await this.overlappingCovers(
                     value.date, value.time, BOOKING_CONFIG.durationMinutes, id
                 );
-                if (transactionalUsed + value.partySize > this.getMaxOnlineCovers()) {
+                if (transactionalUsed + value.partySize > await this.getMaxOnlineCovers()) {
                     throw validationError("This change would exceed the current cover limit.",
                         "partySize", "CAPACITY_EXCEEDED");
                 }
             }
-            const changed = this.store.updateBooking(id, updatePatch);
+            const changed = await this.store.updateBooking(id, updatePatch);
             if (status !== existing.status) {
-                this.store.insertBookingEvent({
+                await this.store.insertBookingEvent({
                     id: crypto.randomUUID(),
                     booking_id: id,
                     kind: "status_changed",
@@ -987,7 +999,7 @@ class BookingService {
                 });
             }
             if (scheduleChanged) {
-                this.store.insertBookingEvent({
+                await this.store.insertBookingEvent({
                     id: crypto.randomUUID(),
                     booking_id: id,
                     kind: "booking_amended",
@@ -997,7 +1009,7 @@ class BookingService {
                 });
             }
             if (materialFields.length) {
-                this.store.insertBookingEvent({
+                await this.store.insertBookingEvent({
                     id: crypto.randomUUID(),
                     booking_id: id,
                     kind: "booking_details_changed",
@@ -1006,7 +1018,7 @@ class BookingService {
                     created_at: now
                 });
             }
-            this.appendAdminEvent(actor, "booking_updated", "booking", id,
+            await this.appendAdminEvent(actor, "booking_updated", "booking", id,
                 [...materialFields, status !== existing.status ? "status" : "", scheduleChanged ? "schedule" : ""]
                     .filter(Boolean).join(", "), audit.requestId);
             return changed;
@@ -1019,7 +1031,7 @@ class BookingService {
     }
 
     async resendConfirmation(id, audit = {}) {
-        const booking = this.store.getBooking(id);
+        const booking = await this.store.getBooking(id);
         if (!booking) throw Object.assign(new Error("Booking not found."), { status: 404, code: "NOT_FOUND" });
         if (!booking.email) throw validationError("This booking does not have a customer email address.", "email");
         if (!ACTIVE_STATUSES.has(booking.status)) throw validationError("Only active bookings can receive a confirmation.");
@@ -1027,20 +1039,20 @@ class BookingService {
         const emails = await this.mailer.sendBookingEmails(booking, credential.rawToken);
         const customerEmail = emails.find((email) => email.kind === "customer_confirmation");
         if (customerEmail && customerEmail.status !== "failed") {
-            this.activateManageCredential(id, credential);
+            await this.activateManageCredential(id, credential);
         }
-        this.store.updateBooking(id, {
+        await this.store.updateBooking(id, {
             email_status: customerEmail?.status || "pending",
             updated_at: this.nowIso()
         });
         const actor = cleanText(audit.actor || "Admin", 100);
-        this.appendEvent(id, "confirmation_resent", actor, "Confirmation email prepared again");
-        this.appendAdminEvent(actor, "confirmation_resent", "booking", id, "", audit.requestId);
-        return { booking: publicBooking(this.store.getBooking(id)) };
+        await this.appendEvent(id, "confirmation_resent", actor, "Confirmation email prepared again");
+        await this.appendAdminEvent(actor, "confirmation_resent", "booking", id, "", audit.requestId);
+        return { booking: publicBooking(await this.store.getBooking(id)) };
     }
 
-    setCallConfirmation(id, confirmed, audit = {}) {
-        const booking = this.store.getBooking(id);
+    async setCallConfirmation(id, confirmed, audit = {}) {
+        const booking = await this.store.getBooking(id);
         if (!booking) throw Object.assign(new Error("Booking not found."), { status: 404, code: "NOT_FOUND" });
         if (typeof confirmed !== "boolean") {
             throw validationError("Please provide a valid confirmation state.", "confirmed");
@@ -1050,18 +1062,18 @@ class BookingService {
         if (alreadyConfirmed === confirmed) {
             return {
                 booking: publicBooking(booking),
-                auditEvents: this.store.listBookingEvents(id)
+                auditEvents: await this.store.listBookingEvents(id)
             };
         }
 
         const now = this.nowIso();
         const actor = cleanText(audit.actor || "Admin", 100);
-        const updated = this.store.transaction(() => {
-            const changed = this.store.updateBooking(id, {
+        const updated = await this.store.transaction(async () => {
+            const changed = await this.store.updateBooking(id, {
                 call_confirmed_at: confirmed ? now : null,
                 updated_at: now
             });
-            this.store.insertBookingEvent({
+            await this.store.insertBookingEvent({
                 id: crypto.randomUUID(),
                 booking_id: id,
                 kind: confirmed ? "call_confirmed" : "call_confirmation_cleared",
@@ -1072,17 +1084,17 @@ class BookingService {
             return changed;
         });
 
-        this.appendAdminEvent(actor, confirmed ? "call_confirmed" : "call_confirmation_cleared",
+        await this.appendAdminEvent(actor, confirmed ? "call_confirmed" : "call_confirmation_cleared",
             "booking", id, "", audit.requestId);
 
         return {
             booking: publicBooking(updated),
-            auditEvents: this.store.listBookingEvents(id)
+            auditEvents: await this.store.listBookingEvents(id)
         };
     }
 
     async sendReminderForBooking(id, { force = false, actor = "System", requestId = null } = {}) {
-        let booking = this.store.getBooking(id);
+        const booking = await this.store.getBooking(id);
         if (!booking) throw Object.assign(new Error("Booking not found."), { status: 404, code: "NOT_FOUND" });
         if (!booking.email) throw validationError("This booking does not have a customer email address.", "email");
         if (!ACTIVE_STATUSES.has(booking.status)) throw validationError("Only active bookings can receive reminders.");
@@ -1091,27 +1103,27 @@ class BookingService {
         }
         const claimedAt = this.nowIso();
         const staleBefore = new Date(this.nowDate().getTime() - (10 * 60 * 1000)).toISOString();
-        if (!this.store.claimReminder(id, claimedAt, staleBefore, force)) {
-            return { booking: publicBooking(this.store.getBooking(id)), prepared: false };
+        if (!await this.store.claimReminder(id, claimedAt, staleBefore, force)) {
+            return { booking: publicBooking(await this.store.getBooking(id)), prepared: false };
         }
         const credential = this.createManageCredential(booking);
         const email = await this.mailer.sendReminderEmail(booking, credential.rawToken);
         const now = this.nowIso();
         if (email.status === "failed") {
-            this.store.updateBooking(id, { email_status: "failed", updated_at: now });
-            this.store.releaseReminderClaim(id);
-            return { booking: publicBooking(this.store.getBooking(id)), prepared: false, email };
+            await this.store.updateBooking(id, { email_status: "failed", updated_at: now });
+            await this.store.releaseReminderClaim(id);
+            return { booking: publicBooking(await this.store.getBooking(id)), prepared: false, email };
         }
-        this.activateManageCredential(id, credential);
-        const updated = this.store.updateBooking(id, {
+        await this.activateManageCredential(id, credential);
+        const updated = await this.store.updateBooking(id, {
             reminder_sent_at: now,
             reminder_claimed_at: null,
             email_status: email.status,
             updated_at: now
         });
-        this.appendEvent(id, "reminder_prepared", actor, "24-hour reminder prepared");
+        await this.appendEvent(id, "reminder_prepared", actor, "24-hour reminder prepared");
         if (actor !== "System") {
-            this.appendAdminEvent(actor, "reminder_prepared", "booking", id, "", requestId);
+            await this.appendAdminEvent(actor, "reminder_prepared", "booking", id, "", requestId);
         }
         return { booking: publicBooking(updated), prepared: true, email };
     }
@@ -1120,7 +1132,7 @@ class BookingService {
         const now = this.nowDate();
         const latest = now.getTime() + (BOOKING_CONFIG.reminderLeadHours * 60 * 60 * 1000);
         const prepared = [];
-        for (const booking of this.store.listReminderCandidates()) {
+        for (const booking of await this.store.listReminderCandidates()) {
             const bookingDate = venueDateTime(booking.booking_date, booking.booking_time);
             if (!bookingDate) continue;
             const timestamp = bookingDate.getTime();
@@ -1132,7 +1144,7 @@ class BookingService {
         return { preparedCount: prepared.length, bookings: prepared };
     }
 
-    runRetention() {
+    async runRetention() {
         const now = this.nowDate();
         const daysAgo = (days) => new Date(now.getTime() - (days * 86400000));
         return this.store.applyRetention({
@@ -1146,7 +1158,7 @@ class BookingService {
     }
 
     async createWaitlistEntry(input, { idempotencyKey = null } = {}) {
-        this.requireOnlineBookingsEnabled();
+        await this.requireOnlineBookingsEnabled();
         if (!/^[A-Za-z0-9._:-]{16,128}$/.test(String(idempotencyKey || ""))) {
             throw validationError("A valid waiting-list request identifier is required.", null, "IDEMPOTENCY_REQUIRED");
         }
@@ -1162,13 +1174,13 @@ class BookingService {
         const phone = normalisePhone(input.phone, true);
         const now = this.nowIso();
         let replayed = false;
-        const entry = this.store.transaction(() => {
-            const duplicate = this.store.getWaitlistEntryByIdempotencyKey(idempotencyKey);
+        const entry = await this.store.transaction(async () => {
+            const duplicate = await this.store.getWaitlistEntryByIdempotencyKey(idempotencyKey);
             if (duplicate) {
                 replayed = true;
                 return duplicate;
             }
-            const availability = this.getAvailability(date, partySize);
+            const availability = await this.getAvailability(date, partySize);
             const slot = availability.slots.find((item) => item.time === time);
             if (slot?.available) {
                 throw validationError("A table is currently available at that time—please book it directly.", "time", "SLOT_AVAILABLE");
@@ -1202,35 +1214,35 @@ class BookingService {
     }
 
     async notifyWaitlistEntry(id, { force = false, actor = "System", requestId = null } = {}) {
-        const entry = this.store.getWaitlistEntry(id);
+        const entry = await this.store.getWaitlistEntry(id);
         if (!entry) throw Object.assign(new Error("Waiting-list entry not found."), { status: 404, code: "NOT_FOUND" });
         if (entry.status !== "waiting" && !force) {
             return { entry: publicWaitlistEntry(entry), notified: false };
         }
-        const availability = this.getAvailability(entry.booking_date, entry.party_size);
+        const availability = await this.getAvailability(entry.booking_date, entry.party_size);
         const slot = availability.slots.find((item) => item.time === entry.booking_time);
         if (!slot?.available && !force) {
             throw validationError("There is not currently enough availability for this party.", "time", "SLOT_UNAVAILABLE");
         }
         const claimedAt = this.nowIso();
         const staleBefore = new Date(this.nowDate().getTime() - (10 * 60 * 1000)).toISOString();
-        if (!this.store.claimWaitlistNotification(id, claimedAt, staleBefore, force)) {
-            return { entry: publicWaitlistEntry(this.store.getWaitlistEntry(id)), notified: false };
+        if (!await this.store.claimWaitlistNotification(id, claimedAt, staleBefore, force)) {
+            return { entry: publicWaitlistEntry(await this.store.getWaitlistEntry(id)), notified: false };
         }
         const email = await this.mailer.sendWaitlistAvailableEmail(entry);
         if (email.status === "failed") {
-            this.store.updateWaitlistEntry(id, { notification_claimed_at: null, updated_at: this.nowIso() });
-            return { entry: publicWaitlistEntry(this.store.getWaitlistEntry(id)), notified: false, email };
+            await this.store.updateWaitlistEntry(id, { notification_claimed_at: null, updated_at: this.nowIso() });
+            return { entry: publicWaitlistEntry(await this.store.getWaitlistEntry(id)), notified: false, email };
         }
         const now = this.nowIso();
-        const updated = this.store.updateWaitlistEntry(id, {
+        const updated = await this.store.updateWaitlistEntry(id, {
             status: "notified",
             notified_at: now,
             notification_claimed_at: null,
             updated_at: now
         });
         if (actor !== "System") {
-            this.appendAdminEvent(actor, "waitlist_notified", "waitlist", id, "", requestId);
+            await this.appendAdminEvent(actor, "waitlist_notified", "waitlist", id, "", requestId);
         }
         return { entry: publicWaitlistEntry(updated), notified: true, email };
     }
@@ -1238,9 +1250,9 @@ class BookingService {
     async notifyWaitlistForDate(date) {
         const notifiedTimes = new Set();
         const notified = [];
-        for (const entry of this.store.listWaitingForDate(date)) {
+        for (const entry of await this.store.listWaitingForDate(date)) {
             if (notifiedTimes.has(entry.booking_time)) continue;
-            const availability = this.getAvailability(entry.booking_date, entry.party_size);
+            const availability = await this.getAvailability(entry.booking_date, entry.party_size);
             const slot = availability.slots.find((item) => item.time === entry.booking_time);
             if (!slot?.available) continue;
             const result = await this.notifyWaitlistEntry(entry.id);
@@ -1252,53 +1264,53 @@ class BookingService {
         return { notifiedCount: notified.length, entries: notified };
     }
 
-    updateWaitlistStatus(id, status, audit = {}) {
-        const entry = this.store.getWaitlistEntry(id);
+    async updateWaitlistStatus(id, status, audit = {}) {
+        const entry = await this.store.getWaitlistEntry(id);
         if (!entry) throw Object.assign(new Error("Waiting-list entry not found."), { status: 404, code: "NOT_FOUND" });
         if (!VALID_WAITLIST_STATUSES.has(status)) {
             throw validationError("Please choose a valid waiting-list status.", "status");
         }
         const now = this.nowIso();
-        const updated = this.store.updateWaitlistEntry(id, {
+        const updated = await this.store.updateWaitlistEntry(id, {
             status,
             updated_at: now,
             booked_at: status === "booked" ? (entry.booked_at || now) : entry.booked_at
         });
-        this.appendAdminEvent(audit.actor || "Admin", "waitlist_status_changed", "waitlist", id,
+        await this.appendAdminEvent(audit.actor || "Admin", "waitlist_status_changed", "waitlist", id,
             `${entry.status} → ${status}`, audit.requestId);
         return { entry: publicWaitlistEntry(updated) };
     }
 
-    createBlock(input, audit = {}) {
+    async createBlock(input, audit = {}) {
         const date = this.validateDate(input.date, { allowPast: false, allowClosedDay: true });
         const time = input.time === "*" ? "*" : cleanText(input.time, 5);
         if (time !== "*" && !generateSlots(date).includes(time)) {
             throw validationError("Please choose a valid time to close.", "time");
         }
         try {
-            const block = this.store.createBlock({
+            const block = await this.store.createBlock({
                 id: crypto.randomUUID(),
                 booking_date: date,
                 booking_time: time,
                 reason: cleanText(input.reason || "Closed by the pub", 200),
                 created_at: this.nowIso()
             });
-            this.appendAdminEvent(audit.actor || "Admin", "availability_closed", "block", block.id,
+            await this.appendAdminEvent(audit.actor || "Admin", "availability_closed", "block", block.id,
                 `${date} ${time}`, audit.requestId);
             return block;
         } catch (error) {
-            if (String(error.message).includes("UNIQUE")) {
+            if (error.code === "23505" || /unique/i.test(String(error.message))) {
                 throw validationError("That date or time is already closed.", "time");
             }
             throw error;
         }
     }
 
-    removeBlock(id, audit = {}) {
-        if (!this.store.removeBlock(id)) {
+    async removeBlock(id, audit = {}) {
+        if (!await this.store.removeBlock(id)) {
             throw Object.assign(new Error("Closure not found."), { status: 404, code: "NOT_FOUND" });
         }
-        this.appendAdminEvent(audit.actor || "Admin", "availability_reopened", "block", id,
+        await this.appendAdminEvent(audit.actor || "Admin", "availability_reopened", "block", id,
             "", audit.requestId);
         return { success: true };
     }

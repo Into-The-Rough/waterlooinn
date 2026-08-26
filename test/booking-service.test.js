@@ -7,7 +7,7 @@ const { BookingStore } = require("../booking/store");
 const { EmailService } = require("../booking/email-service");
 const { BookingService } = require("../booking/service");
 
-function createFixture(options = {}) {
+async function createFixture(options = {}) {
     const store = new BookingStore(":memory:");
     const mailer = new EmailService(store, {
         apiKey: "",
@@ -19,7 +19,7 @@ function createFixture(options = {}) {
         requireEmailVerification: options.requireEmailVerification ?? false
     });
     if (options.onlineBookingsEnabled !== false) {
-        service.setOnlineBookingsEnabled(true, { actor: "Test setup" });
+        await service.setOnlineBookingsEnabled(true, { actor: "Test setup" });
     }
     const manageTokens = new Map();
     for (const method of ["sendBookingEmails", "sendAmendmentEmails", "sendReminderEmail"]) {
@@ -45,13 +45,13 @@ function createFixture(options = {}) {
     return { store, mailer, service };
 }
 
-test("a fresh booking database starts with public online bookings disabled", (t) => {
-    const { store, service } = createFixture({ onlineBookingsEnabled: false });
+test("a fresh booking database starts with public online bookings disabled", async (t) => {
+    const { store, service } = await createFixture({ onlineBookingsEnabled: false });
     t.after(() => store.close());
 
-    assert.equal(service.getOnlineBookingState().enabled, false);
-    assert.throws(
-        () => service.getPublicAvailability("2026-07-29", 2),
+    assert.equal((await service.getOnlineBookingState()).enabled, false);
+    await assert.rejects(
+        service.getPublicAvailability("2026-07-29", 2),
         (error) => error.code === "ONLINE_BOOKINGS_CLOSED"
     );
 });
@@ -73,36 +73,36 @@ function bookingInput(overrides = {}) {
     };
 }
 
-test("publishes the configured Wednesday availability", (t) => {
-    const { store, service } = createFixture();
+test("publishes the configured Wednesday availability", async (t) => {
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
-    const availability = service.getAvailability("2026-07-29", 4);
+    const availability = await service.getAvailability("2026-07-29", 4);
     assert.equal(availability.service.label, "Wednesday");
     assert.equal(availability.durationMinutes, 120);
     assert.equal(availability.slots[0].time, "12:00");
     assert.equal(availability.slots.at(-1).time, "20:00");
     assert.equal(availability.slots.every((slot) => slot.available), true);
-    assert.throws(
-        () => service.getAvailability("2026-08-04", 2),
+    await assert.rejects(
+        service.getAvailability("2026-08-04", 2),
         /not available on this day/
     );
 });
 
 test("global master switch blocks new public bookings but leaves admin booking available", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
-    assert.equal(service.getOnlineBookingState().enabled, true);
-    assert.equal(service.getOnlineBookingState().maxCovers, 30);
-    const disabled = service.setOnlineBookingsEnabled(false, {
+    assert.equal((await service.getOnlineBookingState()).enabled, true);
+    assert.equal((await service.getOnlineBookingState()).maxCovers, 30);
+    const disabled = await service.setOnlineBookingsEnabled(false, {
         actor: "Test Manager",
         requestId: "request-1"
     });
     assert.equal(disabled.enabled, false);
     assert.equal(disabled.updatedBy, "Test Manager");
-    assert.throws(
-        () => service.getPublicAvailability("2026-07-29", 2),
+    await assert.rejects(
+        service.getPublicAvailability("2026-07-29", 2),
         (error) => error.code === "ONLINE_BOOKINGS_CLOSED"
     );
     await assert.rejects(
@@ -117,26 +117,26 @@ test("global master switch blocks new public bookings but leaves admin booking a
     }), { admin: true, actor: "Test Manager" });
     assert.equal(adminBooking.booking.status, "confirmed");
 
-    const enabled = service.setOnlineBookingsEnabled(true, { actor: "Test Manager" });
+    const enabled = await service.setOnlineBookingsEnabled(true, { actor: "Test Manager" });
     assert.equal(enabled.enabled, true);
-    assert.equal(service.getPublicAvailability("2026-07-29", 2).slots[0].available, true);
+    assert.equal((await service.getPublicAvailability("2026-07-29", 2)).slots[0].available, true);
 });
 
-test("peak cover capacity is editable and used by availability and diary summaries", (t) => {
-    const { store, service } = createFixture();
+test("peak cover capacity is editable and used by availability and diary summaries", async (t) => {
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
-    const state = service.setMaxOnlineCovers(36, { actor: "Test Manager" });
+    const state = await service.setMaxOnlineCovers(36, { actor: "Test Manager" });
     assert.equal(state.maxCovers, 36);
-    assert.equal(service.getAvailability("2026-07-29", 2).slots[0].remainingCovers, 36);
-    assert.equal(service.listDiary("2026-07-29").config.maxOnlineCovers, 36);
-    assert.equal(service.listCalendar("2026-07").maxCovers, 36);
-    assert.throws(() => service.setMaxOnlineCovers(0), /between 1 and 500/);
-    assert.throws(() => service.setMaxOnlineCovers(12.5), /whole number/);
+    assert.equal((await service.getAvailability("2026-07-29", 2)).slots[0].remainingCovers, 36);
+    assert.equal((await service.listDiary("2026-07-29")).config.maxOnlineCovers, 36);
+    assert.equal((await service.listCalendar("2026-07")).maxCovers, 36);
+    await assert.rejects(service.setMaxOnlineCovers(0), /between 1 and 500/);
+    await assert.rejects(service.setMaxOnlineCovers(12.5), /whole number/);
 });
 
 test("creates a confirmed booking and customer/staff email previews", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     const result = await service.createBooking(bookingInput());
@@ -154,7 +154,7 @@ test("creates a confirmed booking and customer/staff email previews", async (t) 
 });
 
 test("enforces overlapping cover capacity", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     await service.createBooking(bookingInput({
@@ -181,69 +181,69 @@ test("enforces overlapping cover capacity", async (t) => {
         email: "fourth@example.com"
     }));
 
-    const availability = service.getAvailability("2026-07-29", 1);
+    const availability = await service.getAvailability("2026-07-29", 1);
     const oneThirty = availability.slots.find((slot) => slot.time === "13:30");
     assert.equal(oneThirty.available, false);
     assert.equal(oneThirty.remainingCovers, 0);
 });
 
 test("cancellation token cancels once and releases capacity", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     const result = await service.createBooking(bookingInput({ partySize: 8 }));
     const token = manageTokenFor(store, result.booking.id);
 
-    assert.equal(service.getManagedBooking(token).canCancel, true);
+    assert.equal((await service.getManagedBooking(token)).canCancel, true);
     const cancelled = await service.cancelBooking(token);
     assert.equal(cancelled.booking.status, "cancelled");
-    assert.equal(service.getAvailability("2026-07-29", 8).slots[0].available, true);
-    assert.throws(() => service.getManagedBooking(token), /invalid or has expired/);
+    assert.equal((await service.getAvailability("2026-07-29", 8)).slots[0].available, true);
+    await assert.rejects(service.getManagedBooking(token), /invalid or has expired/);
 });
 
-test("admin closures remove slots from public availability", (t) => {
-    const { store, service } = createFixture();
+test("admin closures remove slots from public availability", async (t) => {
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
-    const block = service.createBlock({
+    const block = await service.createBlock({
         date: "2026-07-29",
         time: "18:00",
         reason: "Private supper"
     });
-    const availability = service.getAvailability("2026-07-29", 2);
+    const availability = await service.getAvailability("2026-07-29", 2);
     assert.equal(availability.slots.find((slot) => slot.time === "18:00").available, false);
-    service.removeBlock(block.id);
+    await service.removeBlock(block.id);
     assert.equal(
-        service.getAvailability("2026-07-29", 2).slots.find((slot) => slot.time === "18:00").available,
+        (await service.getAvailability("2026-07-29", 2)).slots.find((slot) => slot.time === "18:00").available,
         true
     );
 });
 
 test("admin call confirmation is timestamped, idempotent and audited", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     const result = await service.createBooking(bookingInput());
     const bookingId = result.booking.id;
-    const confirmed = service.setCallConfirmation(bookingId, true);
+    const confirmed = await service.setCallConfirmation(bookingId, true);
 
     assert.ok(confirmed.booking.callConfirmedAt);
     assert.equal(confirmed.auditEvents.length, 2);
     assert.equal(confirmed.auditEvents[0].kind, "call_confirmed");
     assert.equal(confirmed.auditEvents[0].actor, "Admin");
 
-    const repeated = service.setCallConfirmation(bookingId, true);
+    const repeated = await service.setCallConfirmation(bookingId, true);
     assert.equal(repeated.booking.callConfirmedAt, confirmed.booking.callConfirmedAt);
     assert.equal(repeated.auditEvents.length, 2);
 
-    const cleared = service.setCallConfirmation(bookingId, false);
+    const cleared = await service.setCallConfirmation(bookingId, false);
     assert.equal(cleared.booking.callConfirmedAt, null);
     assert.equal(cleared.auditEvents.length, 3);
     assert.equal(cleared.auditEvents[0].kind, "call_confirmation_cleared");
 });
 
 test("monthly calendar summarises bookings, covers and peak capacity", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     await service.createBooking(bookingInput({
@@ -257,13 +257,13 @@ test("monthly calendar summarises bookings, covers and peak capacity", async (t)
         name: "Second Lunch Party",
         email: "second-lunch@example.com"
     }));
-    service.createBlock({
+    await service.createBlock({
         date: "2026-07-30",
         time: "*",
         reason: "Private event"
     });
 
-    const calendar = service.listCalendar("2026-07");
+    const calendar = await service.listCalendar("2026-07");
     const bookedDay = calendar.days.find((day) => day.date === "2026-07-29");
     const closedDay = calendar.days.find((day) => day.date === "2026-07-30");
 
@@ -276,7 +276,7 @@ test("monthly calendar summarises bookings, covers and peak capacity", async (t)
 });
 
 test("admins can assign a seating area and table", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     const result = await service.createBooking(bookingInput({ partySize: 7 }));
@@ -289,12 +289,12 @@ test("admins can assign a seating area and table", async (t) => {
 });
 
 test("customer can confirm and amend an active booking", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     const result = await service.createBooking(bookingInput());
     const token = manageTokenFor(store, result.booking.id);
-    const confirmed = service.confirmBooking(token);
+    const confirmed = await service.confirmBooking(token);
     assert.ok(confirmed.booking.customerConfirmedAt);
     assert.equal(confirmed.canConfirm, false);
 
@@ -312,7 +312,7 @@ test("customer can confirm and amend an active booking", async (t) => {
 });
 
 test("due reminders are prepared once with confirmation and cancellation links", async (t) => {
-    const { store, service } = createFixture({
+    const { store, service } = await createFixture({
         now: () => new Date("2026-07-28T12:00:00Z")
     });
     t.after(() => store.close());
@@ -333,16 +333,16 @@ test("due reminders are prepared once with confirmation and cancellation links",
 });
 
 test("reminders rotate manage tokens and stored previews redact the bearer", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     const result = await service.createBooking(bookingInput());
     const originalToken = manageTokenFor(store, result.booking.id);
     await service.sendReminderForBooking(result.booking.id, { force: true });
 
-    assert.throws(() => service.getManagedBooking(originalToken), /invalid or has expired/);
+    await assert.rejects(service.getManagedBooking(originalToken), /invalid or has expired/);
     const rotatedToken = manageTokenFor(store, result.booking.id);
-    assert.equal(service.exchangeManageToken(rotatedToken).bookingId, result.booking.id);
+    assert.equal((await service.exchangeManageToken(rotatedToken)).bookingId, result.booking.id);
     const reminder = store.listEmailsForBooking(result.booking.id)
         .find((email) => email.kind === "customer_reminder");
     const storedHtml = store.getEmail(reminder.id).html;
@@ -351,7 +351,7 @@ test("reminders rotate manage tokens and stored previews redact the bearer", asy
 });
 
 test("a cancellation offers released capacity to the earliest waiting guest", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     const first = await service.createBooking(bookingInput({
@@ -395,7 +395,7 @@ test("a cancellation offers released capacity to the earliest waiting guest", as
 });
 
 test("diary includes attention counts and contact-based guest history", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
 
     const previous = await service.createBooking(bookingInput({
@@ -409,7 +409,7 @@ test("diary includes attention counts and contact-based guest history", async (t
         requests: "Birthday"
     }));
 
-    const diary = service.listDiary("2026-07-29");
+    const diary = await service.listDiary("2026-07-29");
     const current = diary.bookings.find((booking) => booking.time === "17:00");
     assert.equal(current.guestHistory.previousBookingCount, 1);
     assert.equal(current.guestHistory.completedVisitCount, 1);
@@ -418,22 +418,22 @@ test("diary includes attention counts and contact-based guest history", async (t
     assert.equal(diary.attention.depositPending, undefined);
 });
 
-test("rejects impossible ISO calendar dates", (t) => {
-    const { store, service } = createFixture();
+test("rejects impossible ISO calendar dates", async (t) => {
+    const { store, service } = await createFixture();
     t.after(() => store.close());
-    assert.throws(() => service.getAvailability("2026-09-31", 2), /valid date/);
-    assert.throws(() => service.getAvailability("2026-02-29", 2), /valid date/);
+    await assert.rejects(service.getAvailability("2026-09-31", 2), /valid date/);
+    await assert.rejects(service.getAvailability("2026-02-29", 2), /valid date/);
 });
 
 test("customer management response excludes administrative and contact fields", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
     const result = await service.createBooking(bookingInput());
     await service.updateBooking(result.booking.id, { internalNotes: "Private staff note" }, {
         actor: "Test manager",
         requestId: "request-1"
     });
-    const managed = service.getManagedBooking(manageTokenFor(store, result.booking.id));
+    const managed = await service.getManagedBooking(manageTokenFor(store, result.booking.id));
     assert.equal(Object.hasOwn(managed.booking, "internalNotes"), false);
     assert.equal(Object.hasOwn(managed.booking, "email"), false);
     assert.equal(Object.hasOwn(managed.booking, "phone"), false);
@@ -444,7 +444,7 @@ test("customer management response excludes administrative and contact fields", 
 });
 
 test("booking creation is idempotent and does not duplicate email", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
     const key = "same-request-identifier-001";
     const first = await service.createBooking(bookingInput(), { idempotencyKey: key });
@@ -456,7 +456,7 @@ test("booking creation is idempotent and does not duplicate email", async (t) =>
 });
 
 test("concurrent reminder attempts claim delivery once", async (t) => {
-    const { store, service, mailer } = createFixture();
+    const { store, service, mailer } = await createFixture();
     t.after(() => store.close());
     const result = await service.createBooking(bookingInput());
     let deliveries = 0;
@@ -474,28 +474,28 @@ test("concurrent reminder attempts claim delivery once", async (t) => {
 });
 
 test("production-style bookings hold capacity until email confirmation", async (t) => {
-    const { store, service } = createFixture({ requireEmailVerification: true });
+    const { store, service } = await createFixture({ requireEmailVerification: true });
     t.after(() => store.close());
     const result = await service.createBooking(bookingInput());
     assert.equal(result.booking.status, "pending");
     assert.ok(result.booking.holdExpiresAt);
-    const confirmed = service.confirmBooking(manageTokenFor(store, result.booking.id));
+    const confirmed = await service.confirmBooking(manageTokenFor(store, result.booking.id));
     assert.equal(confirmed.booking.status, "confirmed");
     assert.equal(confirmed.canConfirm, false);
 });
 
 test("manage tokens expire after the booking grace period", async (t) => {
     let now = new Date("2026-07-28T10:00:00Z");
-    const { store, service } = createFixture({ now: () => now });
+    const { store, service } = await createFixture({ now: () => now });
     t.after(() => store.close());
     const result = await service.createBooking(bookingInput());
     const token = manageTokenFor(store, result.booking.id);
     now = new Date("2026-07-31T13:00:00Z");
-    assert.throws(() => service.getManagedBooking(token), /invalid or has expired/);
+    await assert.rejects(service.getManagedBooking(token), /invalid or has expired/);
 });
 
 test("failed replacement email keeps the previous manage token usable", async (t) => {
-    const { store, service, mailer } = createFixture();
+    const { store, service, mailer } = await createFixture();
     t.after(() => store.close());
     const result = await service.createBooking(bookingInput());
     const originalToken = manageTokenFor(store, result.booking.id);
@@ -504,12 +504,12 @@ test("failed replacement email keeps the previous manage token usable", async (t
     const reminder = await service.sendReminderForBooking(result.booking.id, { force: true });
 
     assert.equal(reminder.prepared, false);
-    assert.equal(service.exchangeManageToken(originalToken).bookingId, result.booking.id);
+    assert.equal((await service.exchangeManageToken(originalToken)).bookingId, result.booking.id);
 });
 
 test("expired verification holds disappear from admin capacity summaries", async (t) => {
     let now = new Date("2026-07-28T10:00:00Z");
-    const { store, service } = createFixture({
+    const { store, service } = await createFixture({
         now: () => now,
         requireEmailVerification: true
     });
@@ -518,16 +518,16 @@ test("expired verification holds disappear from admin capacity summaries", async
     const token = manageTokenFor(store, result.booking.id);
     now = new Date("2026-07-28T10:16:00Z");
 
-    const diary = service.listDiary("2026-07-29");
+    const diary = await service.listDiary("2026-07-29");
 
     assert.equal(diary.bookings[0].status, "expired");
     assert.equal(diary.summary.bookingCount, 0);
     assert.equal(diary.summary.covers, 0);
-    assert.throws(() => service.exchangeManageToken(token), /invalid or has expired/);
+    await assert.rejects(service.exchangeManageToken(token), /invalid or has expired/);
 });
 
 test("waiting-list creation is idempotent", async (t) => {
-    const { store, service } = createFixture();
+    const { store, service } = await createFixture();
     t.after(() => store.close());
     await service.createBooking(bookingInput({ partySize: 8, email: "one@example.com" }));
     await service.createBooking(bookingInput({ partySize: 8, email: "two@example.com" }));
@@ -555,21 +555,21 @@ test("waiting-list creation is idempotent", async (t) => {
 
 test("durable rate limits and retention remove stale personal data", async (t) => {
     let now = new Date("2026-07-28T10:00:00Z");
-    const { store, service } = createFixture({ now: () => now });
+    const { store, service } = await createFixture({ now: () => now });
     t.after(() => store.close());
-    assert.equal(store.consumeRateLimit({
+    assert.equal(await store.consumeRateLimit({
         id: crypto.randomUUID(), key: "source", action: "book", now: 1000, windowMs: 1000, limit: 2
     }), true);
-    assert.equal(store.consumeRateLimit({
+    assert.equal(await store.consumeRateLimit({
         id: crypto.randomUUID(), key: "source", action: "book", now: 1001, windowMs: 1000, limit: 2
     }), true);
-    assert.equal(store.consumeRateLimit({
+    assert.equal(await store.consumeRateLimit({
         id: crypto.randomUUID(), key: "source", action: "book", now: 1002, windowMs: 1000, limit: 2
     }), false);
 
     const result = await service.createBooking(bookingInput());
     now = new Date("2028-01-01T10:00:00Z");
-    const retained = service.runRetention();
+    const retained = await service.runRetention();
     const booking = store.getBooking(result.booking.id);
 
     assert.ok(retained.bookingEmails >= 2);

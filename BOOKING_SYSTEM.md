@@ -2,8 +2,9 @@
 
 The website includes public table booking and waiting-list flows, secure customer
 management links, email confirmations/reminders, and an authenticated admin diary.
-SQLite is used for the local prototype and is suitable for a single application
-instance when its database lives on persistent storage.
+SQLite is used by the quick local preview server. The deployable implementation
+uses Netlify Functions and Netlify Database (Postgres), so bookings and settings
+survive function restarts and can be shared safely between function instances.
 
 ## Local use
 
@@ -48,15 +49,16 @@ in public availability, the daily summary and the monthly calendar.
   checks its permission and enforces same-origin mutations. There is no separate
   booking password.
 - Customer email links carry a random 256-bit token in the URL fragment. The
-  browser exchanges it for a booking-scoped, HTTP-only 30-minute session and
-  immediately removes the fragment from the address bar.
+  browser exchanges it for a signed, booking-scoped, HTTP-only 30-minute cookie
+  and immediately removes the fragment from the address bar. The cookie survives
+  function cold starts and cannot be altered without invalidating its signature.
 - Management tokens are stored only as SHA-256 hashes, expire after service plus
   a short grace period, and rotate when a replacement email is accepted.
 - Production bookings remain pending for 15 minutes until the email link is used;
   the pending hold counts against capacity and expires automatically.
 - Booking and waitlist creation require idempotency keys. Capacity decisions and
-  insertions are serialized in SQLite transactions; reminder and waitlist sends
-  use database delivery claims.
+  insertions are serialised in Postgres transactions using a shared row lock;
+  reminder and waitlist sends use database delivery claims.
 - Persistent per-source and per-contact rate limits, a form honeypot, a 64 KiB
   JSON limit, short HTTP timeouts, strict input limits, and generic server errors
   reduce abuse and information leakage.
@@ -66,29 +68,32 @@ in public availability, the daily summary and the monthly calendar.
   production.
 - Stored email bodies are removed after 30 days. Cancelled customer data is
   anonymised after 90 days, completed/historic customer data after 365 days, and
-  stale waitlist records after 90 days. Retention runs at startup and daily.
+  stale waitlist records after 90 days. A scheduled Function checks reminders and
+  retention every 15 minutes.
 
 ## Production requirements
 
-Use the variables documented in [`.env.example`](.env.example). Production mode
-will refuse to start unless the public and Identity URLs are HTTPS, proxy trust is
-explicit, email delivery is configured, and the database path is explicitly set
-to persistent storage.
+Use the variables documented in [`.env.example`](.env.example). The deployment
+needs Netlify Database, the existing invite-only Netlify Identity tenant,
+`RESEND_API_KEY`, and a random `BOOKING_SESSION_SECRET` of at least 32 characters.
+`BOOKING_PUBLIC_URL`, `BOOKING_FROM_EMAIL`, and `BOOKING_STAFF_EMAIL` should also
+be set explicitly in Netlify. Netlify provides `NETLIFY_DB_URL` automatically;
+never commit it. The SQL migration creates a fresh database with bookings off and
+peak capacity set to 30.
 
-Run one application instance. Customer management sessions are held in process
-memory, and SQLite must not be shared over a network filesystem. Put the process
-behind a trusted HTTPS reverse proxy, expose only the proxy publicly, forward a
-sanitised client IP and `X-Forwarded-Proto: https`, and restrict operating-system
-access to the service account and its database/backup directories.
+The public form requires working customer email delivery before it accepts a
+booking. Admins sign in at `/admin/` with their existing invited Identity account,
+then use `/admin/bookings/` for the diary, calendar, master switch and capacity.
 
 The current Identity tenant has public signup disabled, matching the existing
 Decap CMS access policy. For finer separation, assign an Identity role to booking
 staff and configure `BOOKING_ADMIN_ROLES`. Before adding multiple application
 instances, move customer management sessions to a shared server-side session store.
 
-## Backups and recovery
+## Local SQLite backups
 
-`npm run backup:bookings` takes a consistent SQLite snapshot, encrypts it with
+`npm run backup:bookings` takes a consistent snapshot of the local SQLite preview,
+encrypts it with
 AES-256-GCM, writes it with owner-only permissions, removes the plaintext
 temporary file, and prunes matching backups older than the configured retention.
 
@@ -99,10 +104,9 @@ the backup destination:
 openssl rand -base64 32
 ```
 
-Schedule the backup command outside the web process, copy encrypted backups to a
-separate protected system, alert on failures, and periodically test decryption and
-`PRAGMA integrity_check` in an isolated restore directory. Do not overwrite the
-live database during a restore test.
+This script is not a backup for the deployed Postgres database. Database backup,
+retention and restore arrangements must be confirmed in the selected Netlify
+Database plan before the booking switch is enabled.
 
 ## Default booking rules
 
