@@ -69,7 +69,8 @@ in public availability, the daily summary and the monthly calendar.
 - Stored email bodies are removed after 30 days. Cancelled customer data is
   anonymised after 90 days, completed/historic customer data after 365 days, and
   stale waitlist records after 90 days. A scheduled Function checks reminders and
-  retention every 15 minutes.
+  retention every six hours, keeping reminder delivery within the 18–24 hour
+  window without repeatedly waking an idle database.
 
 ## Production requirements
 
