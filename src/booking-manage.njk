@@ -1,0 +1,105 @@
+---
+layout: false
+subpage: true
+headerFixed: true
+permalink: /booking/manage/
+---
+<!DOCTYPE html>
+<html lang="en" data-online-bookings="closed">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Booking | {{ site.name }}</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    {% include "header.njk" %}
+    <main class="manage-booking-page">
+        <div class="container">
+            <section class="manage-booking-card" data-manage-booking>
+                <div class="manage-loading">Loading your booking…</div>
+                <div class="manage-error" hidden>
+                    <p class="eyebrow">We couldn’t find that booking</p>
+                    <h1>Booking link unavailable</h1>
+                    <p class="manage-error-message"></p>
+                    <a href="/book/" class="btn btn-gold" data-online-booking-only>Make a new booking</a>
+                </div>
+                <div class="manage-details" hidden>
+                    <p class="eyebrow">Your reservation</p>
+                    <h1>Manage booking</h1>
+                    <p class="manage-reference"></p>
+                    <dl class="manage-booking-summary">
+                        <div><dt>Date</dt><dd data-field="date"></dd></div>
+                        <div><dt>Time</dt><dd data-field="time"></dd></div>
+                        <div><dt>Guests</dt><dd data-field="party"></dd></div>
+                        <div><dt>Name</dt><dd data-field="name"></dd></div>
+                    </dl>
+
+                    <div class="manage-confirm-panel">
+                        <h2>Please confirm your booking</h2>
+                        <p>One tap lets the pub know you’re still coming.</p>
+                        <div class="manage-confirm-error" role="alert" hidden></div>
+                        <button type="button" class="btn btn-gold js-confirm-booking">Confirm my booking</button>
+                    </div>
+                    <div class="manage-confirmed" hidden>
+                        <strong>✓ Booking confirmed</strong>
+                        <span>Thank you—we’ve let the pub know you’re still coming.</span>
+                    </div>
+
+                    <div class="manage-amend-panel">
+                        <h2>Change your booking</h2>
+                        <p>Choose another available date, time or party size.</p>
+                        <form class="manage-amend-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="manage-date">Date</label>
+                                    <input type="date" id="manage-date" name="date" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="manage-party">Guests</label>
+                                    <select id="manage-party" name="partySize" required>
+                                        {% for number in [1,2,3,4,5,6,7,8] %}
+                                        <option value="{{ number }}">{{ number }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="manage-time">Available time</label>
+                                <select id="manage-time" name="time" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="manage-requests">Special requests <span>(optional)</span></label>
+                                <textarea id="manage-requests" name="requests" rows="3" maxlength="1000"></textarea>
+                            </div>
+                            <div class="manage-amend-error" role="alert" hidden></div>
+                            <p class="manage-amend-success" role="status" hidden></p>
+                            <button type="submit" class="btn btn-outline">Save changes</button>
+                        </form>
+                    </div>
+
+                    <div class="manage-cancel-panel">
+                        <h2>Need to cancel?</h2>
+                        <p>Cancelling releases the table for someone else. This cannot be undone.</p>
+                        <div class="manage-cancel-error" role="alert" hidden></div>
+                        <button type="button" class="btn btn-danger js-cancel-booking">Cancel this booking</button>
+                    </div>
+                    <div class="manage-cancelled" hidden>
+                        <h2>Booking cancelled</h2>
+                        <p>The table has been released and cancellation emails have been prepared.</p>
+                        <a href="/book/" class="btn btn-gold" data-online-booking-only>Make another booking</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+    {% include "footer.njk" %}
+    <script src="/js/main.js" defer></script>
+    <script src="/js/booking-manage.js" defer></script>
+</body>
+</html>

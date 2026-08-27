@@ -1,8 +1,15 @@
 node_modules/
 _site/
 .cache/
+.local/
 _source/
 *.log
+.env
+.env.*
+!.env.example
 .DS_Store
 Thumbs.db
 screenshot-*.png
+
+# Local Netlify folder
+.netlify

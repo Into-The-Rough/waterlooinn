@@ -5,6 +5,28 @@
 (function () {
     'use strict';
 
+    // Netlify Identity invitation and recovery emails return to the public site.
+    // Carry the token to the admin page, where the Identity widget can complete it.
+    if (/^#(?:invite_token|recovery_token|confirmation_token|email_change_token)=/.test(window.location.hash)) {
+        window.location.replace('/admin/' + window.location.hash);
+        return;
+    }
+
+    // The booking links start hidden in the HTML and are only revealed after
+    // the durable server-side master switch has been checked successfully.
+    fetch('/api/booking-status', {
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+    }).then(function (response) {
+        if (!response.ok) throw new Error('Booking status unavailable');
+        return response.json();
+    }).then(function (state) {
+        document.documentElement.dataset.onlineBookings = state.enabled ? 'open' : 'closed';
+    }).catch(function () {
+        document.documentElement.dataset.onlineBookings = 'closed';
+    });
+
     // --- Header scroll effect ---
     const header = document.getElementById('header');
 

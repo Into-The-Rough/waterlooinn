@@ -1,0 +1,25 @@
+---
+layout: false
+permalink: /admin/bookings/email-preview/
+---
+<!DOCTYPE html>
+<html lang="en" data-identity-url="{{ site.url }}/.netlify/identity">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Preview | {{ site.name }}</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="stylesheet" href="/css/booking-admin.css">
+    <script src="/js/booking-identity-config.js" defer></script>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js" defer></script>
+    <script src="/js/booking-identity.js" defer></script>
+</head>
+<body class="admin-login-page">
+    <main class="admin-email-preview" data-email-preview>
+        <p class="admin-loading">Loading authenticated email preview…</p>
+        <div class="admin-login-error" role="alert" hidden></div>
+        <iframe title="Email preview" sandbox="" referrerpolicy="no-referrer" hidden></iframe>
+    </main>
+    <script src="/js/booking-email-preview.js" defer></script>
+</body>
+</html>

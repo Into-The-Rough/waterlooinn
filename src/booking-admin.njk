@@ -1,0 +1,259 @@
+---
+layout: false
+permalink: /admin/bookings/
+---
+<!DOCTYPE html>
+<html lang="en" data-identity-url="{{ site.url }}/.netlify/identity">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Diary | {{ site.name }}</title>
+    <meta name="robots" content="noindex,nofollow">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/booking-admin.css">
+    <script src="/js/booking-identity-config.js" defer></script>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js" defer></script>
+    <script src="/js/booking-identity.js" defer></script>
+</head>
+<body>
+    <div class="admin-print-heading">
+        <strong>The Waterloo Inn</strong>
+        <span data-print-date>Daily service sheet</span>
+    </div>
+    <header class="admin-header">
+        <a href="/" class="admin-logo">The Waterloo <span>Inn</span></a>
+        <div class="admin-header-actions">
+            <nav class="admin-section-nav" aria-label="Administration">
+                <a href="/admin/" class="admin-content-link">Website content</a>
+                <a href="/admin/bookings/" class="admin-content-link" aria-current="page">Booking diary</a>
+            </nav>
+            <span class="admin-local-badge" data-admin-actor>Checking identity…</span>
+            <button type="button" class="admin-content-link admin-logout" data-admin-logout>Sign out</button>
+        </div>
+    </header>
+
+    <main class="admin-shell">
+        <section class="admin-titlebar">
+            <div>
+                <p class="admin-eyebrow">Front of house</p>
+                <h1>Booking diary</h1>
+            </div>
+            <div class="admin-date-nav">
+                <button type="button" class="admin-icon-button" data-date-previous aria-label="Previous day">←</button>
+                <label>
+                    <span>Date</span>
+                    <input type="date" data-diary-date>
+                </label>
+                <button type="button" class="admin-icon-button" data-date-next aria-label="Next day">→</button>
+                <button type="button" class="admin-button admin-button-secondary" data-date-today>Today</button>
+                <button type="button" class="admin-button admin-button-secondary" data-run-reminders>Prepare reminders</button>
+                <button type="button" class="admin-button" data-print-diary>Print service sheet</button>
+            </div>
+        </section>
+
+        <div class="admin-alert" role="alert" hidden></div>
+
+        <section class="admin-master-switch" data-booking-master-switch aria-labelledby="booking-master-heading">
+            <div class="admin-master-switch-copy">
+                <p class="admin-eyebrow">Master switch</p>
+                <h2 id="booking-master-heading">Online bookings</h2>
+                <p data-booking-master-description>Checking the public booking form…</p>
+                <small data-booking-master-updated></small>
+            </div>
+            <div class="admin-master-controls">
+                <form class="admin-capacity-control" data-capacity-form>
+                    <label for="admin-max-covers">Peak cover capacity</label>
+                    <div>
+                        <input type="number" id="admin-max-covers" name="maxCovers" min="1" max="500" step="1" required disabled>
+                        <button type="submit" class="admin-button admin-button-secondary" disabled>Save</button>
+                    </div>
+                </form>
+                <label class="admin-switch-control">
+                    <input type="checkbox" role="switch" data-booking-master-toggle disabled>
+                    <span class="admin-switch-track" aria-hidden="true"><span></span></span>
+                    <strong data-booking-master-label>Checking…</strong>
+                </label>
+            </div>
+        </section>
+
+        <section class="admin-panel admin-calendar-panel" aria-labelledby="calendar-heading">
+            <div class="admin-panel-heading admin-calendar-heading">
+                <div>
+                    <p class="admin-eyebrow">Month at a glance</p>
+                    <h2 id="calendar-heading" data-calendar-heading>Calendar overview</h2>
+                </div>
+                <div class="admin-calendar-nav">
+                    <button type="button" class="admin-icon-button" data-month-previous aria-label="Previous month">←</button>
+                    <button type="button" class="admin-button admin-button-secondary" data-month-current>This month</button>
+                    <button type="button" class="admin-icon-button" data-month-next aria-label="Next month">→</button>
+                </div>
+            </div>
+            <div class="admin-calendar-legend" aria-label="Calendar key">
+                <span><i class="calendar-key calendar-key-quiet"></i>Available</span>
+                <span><i class="calendar-key calendar-key-busy"></i>Busy</span>
+                <span><i class="calendar-key calendar-key-full"></i>At capacity</span>
+                <span>Capacity indicates the busiest overlapping two-hour period.</span>
+            </div>
+            <div class="admin-calendar-scroll">
+                <div class="admin-calendar-weekdays" aria-hidden="true">
+                    <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                </div>
+                <div class="admin-calendar-grid" data-calendar-grid>
+                    <div class="admin-loading">Loading calendar…</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="admin-stats" aria-label="Daily booking summary">
+            <div class="admin-stat"><span>Bookings</span><strong data-stat="bookings">0</strong></div>
+            <div class="admin-stat"><span>Total covers</span><strong data-stat="covers">0</strong></div>
+            <div class="admin-stat"><span>Peak covers</span><strong data-stat="peak">0</strong></div>
+            <div class="admin-stat"><span>Peak availability</span><strong data-stat="remaining">30</strong></div>
+        </section>
+
+        <section class="admin-panel admin-attention-panel" aria-labelledby="attention-heading">
+            <div>
+                <p class="admin-eyebrow">Pre-service checklist</p>
+                <h2 id="attention-heading">Needs attention</h2>
+            </div>
+            <div class="admin-attention-list" data-attention-list></div>
+        </section>
+
+        <div class="admin-layout">
+            <section class="admin-panel admin-diary-panel">
+                <div class="admin-panel-heading">
+                    <div>
+                        <p class="admin-eyebrow">Service</p>
+                        <h2 data-diary-heading>Today</h2>
+                    </div>
+                    <span class="admin-service-hours" data-service-hours></span>
+                </div>
+                <div class="admin-diary-tools">
+                    <label>
+                        <span class="sr-only">Search bookings</span>
+                        <input type="search" data-booking-search placeholder="Search name, phone, email or reference">
+                    </label>
+                    <label>
+                        <span class="sr-only">Filter by status</span>
+                        <select data-status-filter>
+                            <option value="">All statuses</option>
+                            <option value="pending">Awaiting email</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="arrived">Arrived</option>
+                            <option value="seated">Seated</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="no_show">No-show</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </label>
+                    <button type="button" class="admin-button admin-button-secondary" data-clear-filters>Clear filters</button>
+                </div>
+                <div class="admin-booking-list" data-booking-list>
+                    <div class="admin-loading">Loading bookings…</div>
+                </div>
+                <div class="admin-filter-empty" data-filter-empty hidden>No bookings match those filters.</div>
+
+                <section class="admin-waitlist-section" aria-labelledby="waitlist-heading">
+                    <div class="admin-panel-heading">
+                        <div>
+                            <p class="admin-eyebrow">Standby</p>
+                            <h3 id="waitlist-heading">Waiting list</h3>
+                        </div>
+                        <span data-waitlist-count></span>
+                    </div>
+                    <div class="admin-waitlist-list" data-waitlist-list></div>
+                </section>
+            </section>
+
+            <aside class="admin-sidebar">
+                <section class="admin-panel">
+                    <div class="admin-panel-heading">
+                        <div>
+                            <p class="admin-eyebrow">Telephone or walk-in</p>
+                            <h2>Add a booking</h2>
+                        </div>
+                    </div>
+                    <form class="admin-form" data-add-booking>
+                        <input type="hidden" name="waitlistId">
+                        <div class="admin-form-row">
+                            <label>Date<input type="date" name="date" required></label>
+                            <label>Time<input type="time" name="time" step="1800" required></label>
+                        </div>
+                        <div class="admin-form-row">
+                            <label>
+                                Guests
+                                <select name="partySize" required>
+                                    {% for number in [1,2,3,4,5,6,7,8] %}
+                                    <option value="{{ number }}">{{ number }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label>
+                                Source
+                                <select name="source">
+                                    <option value="phone">Telephone</option>
+                                    <option value="walk_in">Walk-in</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="admin-form-row">
+                            <label>
+                                Area
+                                <select name="area">
+                                    <option value="Restaurant">Restaurant</option>
+                                    <option value="Bar">Bar</option>
+                                    <option value="Outside">Outside</option>
+                                </select>
+                            </label>
+                            <label>Table <span>(optional)</span><input type="text" name="tableLabel" maxlength="50" placeholder="e.g. Table 6"></label>
+                        </div>
+                        <label>Guest name<input type="text" name="name" maxlength="100" required></label>
+                        <label>Email <span>(optional)</span><input type="email" name="email" maxlength="254"></label>
+                        <label>Phone <span>(optional)</span><input type="tel" name="phone" maxlength="30"></label>
+                        <label>Guest requests <span>(optional)</span><textarea name="requests" rows="2" maxlength="1000"></textarea></label>
+                        <label>Internal notes <span>(optional)</span><textarea name="internalNotes" rows="2" maxlength="1000"></textarea></label>
+                        <label class="admin-checkbox">
+                            <input type="checkbox" name="overrideCapacity">
+                            <span data-capacity-override-label>Override the current capacity limit</span>
+                        </label>
+                        <button type="submit" class="admin-button">Add confirmed booking</button>
+                    </form>
+                </section>
+
+                <section class="admin-panel">
+                    <div class="admin-panel-heading">
+                        <div>
+                            <p class="admin-eyebrow">Online availability</p>
+                            <h2>Close dates or times</h2>
+                        </div>
+                    </div>
+                    <form class="admin-form admin-block-form" data-add-block>
+                        <label>
+                            Close
+                            <select name="time">
+                                <option value="*">The whole day</option>
+                            </select>
+                        </label>
+                        <label>Reason <span>(optional)</span><input type="text" name="reason" maxlength="200" placeholder="Private event, kitchen closed…"></label>
+                        <button type="submit" class="admin-button admin-button-secondary">Close online bookings</button>
+                    </form>
+                    <div class="admin-block-list" data-block-list></div>
+                </section>
+
+                <section class="admin-panel admin-email-help">
+                    <p class="admin-eyebrow">Email previews</p>
+                    <h2>Local outbox</h2>
+                    <p>Emails are being generated safely but not sent. Open any booking to preview its customer and staff messages.</p>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <script src="/js/booking-admin.js" defer></script>
+</body>
+</html>

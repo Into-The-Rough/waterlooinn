@@ -1,0 +1,143 @@
+<div class="booking-widget" data-booking-widget>
+    <section class="booking-closed-message" data-online-bookings-closed hidden aria-live="polite">
+        <p class="eyebrow">Online booking paused</p>
+        <h3>Call us to book a table</h3>
+        <p>Online bookings are temporarily unavailable. Please call the team and we’ll be happy to help.</p>
+        <a href="tel:{{ site.phone }}" class="btn btn-gold">Call {{ site.phone }}</a>
+    </section>
+
+    <form class="booking-form js-booking-form" data-online-bookings-open novalidate>
+        <div class="booking-step">
+            <div class="booking-step-heading">
+                <span class="booking-step-number">1</span>
+                <div>
+                    <h3>Choose your table</h3>
+                    <p>Online bookings are available for groups of up to eight.</p>
+                </div>
+            </div>
+
+            <div class="form-row booking-search-row">
+                <div class="form-group">
+                    <label for="booking-date">Date</label>
+                    <input type="date" id="booking-date" name="date" required>
+                </div>
+                <div class="form-group">
+                    <label for="booking-party">Guests</label>
+                    <select id="booking-party" name="partySize" required>
+                        <option value="">Select</option>
+                        {% for number in [1,2,3,4,5,6,7,8] %}
+                        <option value="{{ number }}">{{ number }}{% if number == 1 %} guest{% else %} guests{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="booking-availability" aria-live="polite">
+                <p class="booking-availability-prompt">Choose a date and party size to see available times.</p>
+                <div class="booking-slots" role="radiogroup" aria-label="Available booking times"></div>
+            </div>
+
+            <div class="booking-waitlist-offer" hidden>
+                <button type="button" class="booking-waitlist-open js-open-waitlist">Can’t see the time you need? Join the waiting list</button>
+                <div class="booking-waitlist-panel" hidden>
+                    <h4>Join the waiting list</h4>
+                    <p>This is not a confirmed booking. We’ll email you if suitable capacity becomes available.</p>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Preferred time</label>
+                            <select name="waitlistTime"></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" name="waitlistName" maxlength="100" autocomplete="name">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="waitlistEmail" maxlength="254" autocomplete="email">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="tel" name="waitlistPhone" maxlength="30" autocomplete="tel">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes <span>(optional)</span></label>
+                        <textarea name="waitlistNotes" rows="2" maxlength="500"></textarea>
+                    </div>
+                    <div class="booking-waitlist-error" role="alert" hidden></div>
+                    <p class="booking-waitlist-success" role="status" hidden></p>
+                    <button type="button" class="btn btn-outline js-join-waitlist">Join waiting list</button>
+                </div>
+            </div>
+        </div>
+
+        <fieldset class="booking-step booking-details" disabled>
+            <legend class="booking-step-heading">
+                <span class="booking-step-number">2</span>
+                <span>
+                    <strong>Your details</strong>
+                    <small>We’ll use these details only to manage your booking.</small>
+                </span>
+            </legend>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="booking-name">Name</label>
+                    <input type="text" id="booking-name" name="name" autocomplete="name" maxlength="100" required>
+                </div>
+                <div class="form-group">
+                    <label for="booking-email">Email</label>
+                    <input type="email" id="booking-email" name="email" autocomplete="email" maxlength="254" required>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="booking-phone">Phone number</label>
+                    <input type="tel" id="booking-phone" name="phone" autocomplete="tel" maxlength="30" required>
+                </div>
+                <div class="form-group booking-summary-field">
+                    <span class="form-label">Selected table</span>
+                    <strong class="booking-selection">Choose a time above</strong>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="booking-requests">Special requests <span>(optional)</span></label>
+                <textarea id="booking-requests" name="requests" rows="3" maxlength="1000" placeholder="Dietary requirements, accessibility needs or anything else we should know"></textarea>
+            </div>
+            <div class="booking-honeypot" aria-hidden="true">
+                <label for="booking-company">Company</label>
+                <input type="text" id="booking-company" name="company" tabindex="-1" autocomplete="off">
+            </div>
+            <p class="booking-policy">
+                Tables are reserved for two hours and held for 15 minutes after the booked time.
+                You can manage or cancel using the link in your confirmation email.
+            </p>
+            <div class="booking-error" role="alert" hidden></div>
+            <button type="submit" class="btn btn-gold booking-submit">Confirm booking</button>
+        </fieldset>
+    </form>
+
+    <div class="booking-success" tabindex="-1" hidden>
+        <div class="booking-success-icon" aria-hidden="true">✓</div>
+        <p class="booking-success-kicker">Booking confirmed</p>
+        <h3>We’ll see you at The Waterloo Inn</h3>
+        <p class="booking-success-summary"></p>
+        <div class="booking-reference">
+            Reference <strong></strong>
+        </div>
+        <p class="booking-email-note">A confirmation has been prepared for <span></span>.</p>
+        <div class="booking-success-actions">
+            <button type="button" class="btn btn-outline js-book-again">Make another booking</button>
+            <a href="/menu/" class="btn btn-gold">View the menu</a>
+        </div>
+    </div>
+
+    <noscript>
+        <p class="booking-noscript">
+            Online booking requires JavaScript. Please call
+            <a href="tel:{{ site.phone }}">{{ site.phone }}</a> and we’ll book your table.
+        </p>
+    </noscript>
+</div>
