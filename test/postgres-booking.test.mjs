@@ -69,4 +69,13 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("cache-control"), "no-store");
     assert.deepEqual(await response.json(), { enabled: true });
+
+    await functionRuntime.service.setOnlineBookingsEnabled(false, { actor: "Test manager" });
+    const closedResponse = await apiHandler(new Request(
+        "https://example.com/api/availability?date=2026-09-02&partySize=2"
+    ));
+    assert.equal(closedResponse.status, 503);
+    const closedBody = await closedResponse.json();
+    assert.equal(closedBody.error.code, "ONLINE_BOOKINGS_CLOSED");
+    assert.match(closedBody.error.message, /call us on 01298 463248/i);
 });

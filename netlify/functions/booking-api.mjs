@@ -11,6 +11,12 @@ const JSON_HEADERS = {
     "X-Frame-Options": "DENY"
 };
 
+const SAFE_SERVICE_ERRORS = new Set([
+    "EMAIL_UNAVAILABLE",
+    "IDENTITY_UNAVAILABLE",
+    "ONLINE_BOOKINGS_CLOSED"
+]);
+
 function legacyRequest(request) {
     return {
         method: request.method,
@@ -28,10 +34,11 @@ function json(status, payload, extraHeaders = {}) {
 function errorResponse(error, requestId) {
     const status = Number(error.status) || 500;
     if (status >= 500) console.error(`[${requestId}]`, error);
+    const exposeMessage = status < 500 || SAFE_SERVICE_ERRORS.has(error.code);
     return json(status, {
         error: {
             code: error.code || (status >= 500 ? "SERVER_ERROR" : "REQUEST_ERROR"),
-            message: status >= 500 ? "Something went wrong. Please try again." : error.message,
+            message: exposeMessage ? error.message : "Something went wrong. Please try again.",
             field: error.field || null,
             suggestion: error.suggestion || null
         }
