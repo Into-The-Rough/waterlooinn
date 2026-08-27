@@ -33,7 +33,7 @@ function json(status, payload, extraHeaders = {}) {
 
 function errorResponse(error, requestId) {
     const status = Number(error.status) || 500;
-    if (status >= 500) console.error(`[${requestId}]`, error);
+    if (status >= 500 && !SAFE_SERVICE_ERRORS.has(error.code)) console.error(`[${requestId}]`, error);
     const exposeMessage = status < 500 || SAFE_SERVICE_ERRORS.has(error.code);
     return json(status, {
         error: {
