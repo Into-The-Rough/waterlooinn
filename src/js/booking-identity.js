@@ -10,7 +10,21 @@
     });
 
     if (!identity) {
-        rejectReady(new Error("The Waterloo Inn identity service could not be loaded."));
+        resolveReady(null);
+        window.bookingIdentity = {
+            available: false,
+            user: async function () { return null; },
+            token: async function () {
+                var error = new Error("Please sign in to the Waterloo Inn booking diary.");
+                error.code = "AUTH_REQUIRED";
+                throw error;
+            },
+            optionalToken: async function () { return null; },
+            open: function () {},
+            close: function () {},
+            logout: async function () {},
+            onLogin: function () {}
+        };
         return;
     }
 
@@ -35,9 +49,16 @@
         return current.jwt();
     }
 
+    async function optionalToken() {
+        var current = await user();
+        return current ? current.jwt() : null;
+    }
+
     window.bookingIdentity = {
+        available: true,
         user: user,
         token: token,
+        optionalToken: optionalToken,
         open: function () { identity.open("login"); },
         close: function () { identity.close(); },
         logout: function () { return identity.logout(); },

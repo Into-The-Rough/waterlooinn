@@ -83,8 +83,17 @@ never commit it. The SQL migration creates a fresh database with bookings off an
 peak capacity set to 30.
 
 The public form requires working customer email delivery before it accepts a
-booking. Admins sign in at `/admin/` with their existing invited Identity account,
-then use `/admin/bookings/` for the diary, calendar, master switch and capacity.
+booking. Booking staff sign in at `/admin/bookings/login/` with the optional
+booking-only username/password account, or use the existing invited Identity
+account as a fallback. The password is stored only as a salted scrypt hash. Its
+secure HTTP-only session lasts 30 days by default and changing the configured
+username or hash immediately invalidates existing password sessions.
+
+Configure `BOOKING_BASIC_AUTH_USERNAME`, `BOOKING_BASIC_AUTH_PASSWORD_HASH` and
+optionally `BOOKING_BASIC_AUTH_ACTOR` and `BOOKING_BASIC_AUTH_SESSION_DAYS` in
+Netlify's secret environment store. Never put the plaintext password or its real
+hash in `.env.example` or Git. Password login attempts are rate limited in the
+shared booking database.
 
 The current Identity tenant has public signup disabled, matching the existing
 Decap CMS access policy. For finer separation, assign an Identity role to booking

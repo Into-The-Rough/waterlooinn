@@ -20,9 +20,28 @@ permalink: /admin/bookings/login/
         <section class="admin-login-card" data-admin-login>
             <p class="admin-eyebrow">The Waterloo Inn</p>
             <h1>Booking diary sign in</h1>
-            <p>Use the same Netlify Identity account as the website content manager.</p>
+            <p>Sign in to manage table bookings, availability and the daily diary.</p>
             <div class="admin-login-error" role="alert" hidden></div>
-            <button type="button" class="admin-button" data-identity-login>Sign in with Waterloo Inn admin</button>
+            <form class="admin-login-form" data-password-login>
+                <label>
+                    <span>Username</span>
+                    <input type="text" name="username" autocomplete="username" autocapitalize="none"
+                        spellcheck="false" maxlength="128" required autofocus>
+                </label>
+                <label>
+                    <span>Password</span>
+                    <input type="password" name="password" autocomplete="current-password"
+                        maxlength="1024" required>
+                </label>
+                <button type="submit" class="admin-button">Sign in</button>
+                <small>Stay signed in on this device for 30 days.</small>
+            </form>
+            <div class="admin-login-fallback" data-identity-fallback>
+                <span>Website administrator?</span>
+                <button type="button" class="admin-button admin-button-secondary" data-identity-login>
+                    Use Netlify Identity instead
+                </button>
+            </div>
         </section>
     </main>
     <script src="/js/booking-admin-login.js" defer></script>

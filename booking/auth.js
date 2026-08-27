@@ -9,6 +9,9 @@ const ADMIN_PERMISSIONS = Object.freeze([
     "bookings:capacity"
 ]);
 
+const DEFAULT_ADMIN_SESSION_DAYS = 30;
+const SCRYPT_KEY_LENGTH = 32;
+
 function randomToken() {
     return crypto.randomBytes(32).toString("base64url");
 }
@@ -34,6 +37,59 @@ function safeEqual(left, right) {
     return crypto.timingSafeEqual(leftHash, rightHash);
 }
 
+function parsePasswordHash(value) {
+    const parts = String(value || "").split("$");
+    if (parts.length !== 6 || parts[0] !== "scrypt") return null;
+    const N = Number(parts[1]);
+    const r = Number(parts[2]);
+    const p = Number(parts[3]);
+    if (!Number.isInteger(N) || N < 1_024 || N > 65_536 || (N & (N - 1)) !== 0) return null;
+    if (!Number.isInteger(r) || r < 1 || r > 16) return null;
+    if (!Number.isInteger(p) || p < 1 || p > 4) return null;
+    try {
+        const salt = Buffer.from(parts[4], "base64url");
+        const digest = Buffer.from(parts[5], "base64url");
+        if (salt.length < 16 || digest.length !== SCRYPT_KEY_LENGTH) return null;
+        return { N, r, p, salt, digest };
+    } catch {
+        return null;
+    }
+}
+
+function derivePassword(password, parsed) {
+    const maxmem = Math.max(32 * 1024 * 1024, (128 * parsed.N * parsed.r) + (2 * 1024 * 1024));
+    return new Promise((resolve, reject) => {
+        crypto.scrypt(String(password), parsed.salt, parsed.digest.length, {
+            N: parsed.N,
+            r: parsed.r,
+            p: parsed.p,
+            maxmem
+        }, (error, derived) => error ? reject(error) : resolve(derived));
+    });
+}
+
+async function verifyPassword(password, storedHash) {
+    const parsed = parsePasswordHash(storedHash);
+    if (!parsed) return false;
+    const derived = await derivePassword(password, parsed);
+    return crypto.timingSafeEqual(derived, parsed.digest);
+}
+
+async function hashPassword(password, options = {}) {
+    const value = String(password || "");
+    if (!value || value.length > 1_024) throw new Error("Password must contain between 1 and 1024 characters.");
+    const N = Number(options.N || 16_384);
+    const r = Number(options.r || 8);
+    const p = Number(options.p || 1);
+    const salt = options.salt ? Buffer.from(options.salt) : crypto.randomBytes(16);
+    const parsed = { N, r, p, salt, digest: Buffer.alloc(SCRYPT_KEY_LENGTH) };
+    if (!parsePasswordHash(`scrypt$${N}$${r}$${p}$${salt.toString("base64url")}$${parsed.digest.toString("base64url")}`)) {
+        throw new Error("Invalid scrypt password-hashing parameters.");
+    }
+    const digest = await derivePassword(value, parsed);
+    return `scrypt$${N}$${r}$${p}$${salt.toString("base64url")}$${digest.toString("base64url")}`;
+}
+
 class SessionAuth {
     constructor(options = {}) {
         this.secureCookies = Boolean(options.secureCookies);
@@ -50,6 +106,19 @@ class SessionAuth {
         this.manageTtlMs = Number(options.manageTtlMs || 30 * 60 * 1000);
         this.sessionSecret = String(options.sessionSecret ?? process.env.BOOKING_SESSION_SECRET ?? "");
         this.manageSessions = new Map();
+        this.basicUsername = String(options.basicUsername ??
+            process.env.BOOKING_BASIC_AUTH_USERNAME ?? "").trim();
+        this.basicPasswordHash = String(options.basicPasswordHash ??
+            process.env.BOOKING_BASIC_AUTH_PASSWORD_HASH ?? "").trim();
+        const configuredActor = String(options.basicActor ??
+            process.env.BOOKING_BASIC_AUTH_ACTOR ?? "").trim();
+        this.basicActor = configuredActor || this.basicUsername || "Booking diary";
+        const configuredDays = Number(options.adminSessionDays ??
+            process.env.BOOKING_BASIC_AUTH_SESSION_DAYS ?? DEFAULT_ADMIN_SESSION_DAYS);
+        const sessionDays = Number.isFinite(configuredDays)
+            ? Math.min(90, Math.max(1, configuredDays))
+            : DEFAULT_ADMIN_SESSION_DAYS;
+        this.adminTtlMs = Number(options.adminTtlMs ?? sessionDays * 24 * 60 * 60 * 1000);
     }
 
     createManageSession(bookingId) {
@@ -145,6 +214,91 @@ class SessionAuth {
         return this.cookie("wi_manage_session", "", 0);
     }
 
+    basicAuthConfigured() {
+        return Boolean(this.basicUsername && parsePasswordHash(this.basicPasswordHash) && this.sessionSecret);
+    }
+
+    basicCredentialVersion() {
+        return crypto.createHash("sha256")
+            .update(`${this.basicUsername}\n${this.basicPasswordHash}`)
+            .digest("base64url").slice(0, 22);
+    }
+
+    async authenticateBasic(username, password) {
+        if (!this.basicAuthConfigured()) throw basicAuthUnavailable();
+        const suppliedUsername = String(username || "").trim();
+        const suppliedPassword = String(password || "");
+        if (suppliedUsername.length > 128 || suppliedPassword.length > 1_024) return null;
+
+        // Always perform the password derivation so an invalid username is not a cheaper request.
+        const passwordMatches = await verifyPassword(suppliedPassword, this.basicPasswordHash);
+        if (!safeEqual(suppliedUsername.toLowerCase(), this.basicUsername.toLowerCase()) || !passwordMatches) {
+            return null;
+        }
+
+        const session = {
+            username: this.basicUsername,
+            expiresAt: this.now() + this.adminTtlMs,
+            version: this.basicCredentialVersion()
+        };
+        session.id = this.signAdminSession(session);
+        return this.basicAdminSession(session);
+    }
+
+    signAdminSession(session) {
+        const payload = Buffer.from(JSON.stringify({
+            username: session.username,
+            expiresAt: session.expiresAt,
+            version: session.version
+        })).toString("base64url");
+        const signature = crypto.createHmac("sha256", this.sessionSecret)
+            .update(`admin.${payload}`).digest("base64url");
+        return `${payload}.${signature}`;
+    }
+
+    verifyAdminSession(token) {
+        if (!this.basicAuthConfigured() || !token || token.length > 4_096) return null;
+        const separator = token.lastIndexOf(".");
+        if (separator < 1) return null;
+        const payload = token.slice(0, separator);
+        const signature = token.slice(separator + 1);
+        const expected = crypto.createHmac("sha256", this.sessionSecret)
+            .update(`admin.${payload}`).digest("base64url");
+        if (!safeEqual(signature, expected)) return null;
+        try {
+            const session = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+            if (!safeEqual(session.username, this.basicUsername) ||
+                !safeEqual(session.version, this.basicCredentialVersion()) ||
+                !Number.isFinite(session.expiresAt) || session.expiresAt <= this.now()) {
+                return null;
+            }
+            return this.basicAdminSession({ ...session, id: token });
+        } catch {
+            return null;
+        }
+    }
+
+    basicAdminSession(session) {
+        return {
+            ...session,
+            identityId: `basic:${this.basicUsername}`,
+            actor: this.basicActor,
+            email: "",
+            role: "booking-user",
+            authMethod: "password",
+            permissions: new Set(ADMIN_PERMISSIONS)
+        };
+    }
+
+    adminCookie(session) {
+        const maxAge = Math.max(0, Math.floor((session.expiresAt - this.now()) / 1000));
+        return this.cookie("wi_admin_session", session.id, maxAge);
+    }
+
+    clearAdminCookie() {
+        return this.cookie("wi_admin_session", "", 0);
+    }
+
     cookie(name, value, maxAge) {
         return `${name}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}` +
             (this.secureCookies ? "; Secure" : "");
@@ -204,6 +358,8 @@ class SessionAuth {
     }
 
     async getAdminSession(request) {
+        const cookieSession = this.verifyAdminSession(parseCookies(request.headers.cookie).wi_admin_session);
+        if (cookieSession) return cookieSession;
         const token = this.bearerToken(request);
         if (!token) return null;
         this.pruneIdentityCache();
@@ -277,4 +433,18 @@ function authUnavailable() {
     });
 }
 
-module.exports = { ADMIN_PERMISSIONS, SessionAuth, parseCookies, safeEqual };
+function basicAuthUnavailable() {
+    return Object.assign(new Error("Password sign-in is not configured for the booking diary."), {
+        status: 503,
+        code: "BASIC_AUTH_UNAVAILABLE"
+    });
+}
+
+module.exports = {
+    ADMIN_PERMISSIONS,
+    SessionAuth,
+    hashPassword,
+    parseCookies,
+    safeEqual,
+    verifyPassword
+};
