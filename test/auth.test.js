@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { SessionAuth } = require("../booking/auth");
+const { SessionAuth, hashPassword, verifyPassword } = require("../booking/auth");
 
 function request(headers = {}) {
     return { headers };
@@ -92,6 +92,64 @@ test("admin authentication rejects invalid users and missing configured roles", 
     await assert.rejects(
         openRegistration.requireAdmin(request({ authorization: `Bearer ${accessToken}` })),
         /invite-only Identity/
+    );
+});
+
+test("booking-only password login creates a secure restart-safe admin session", async () => {
+    let now = Date.now();
+    const passwordHash = await hashPassword("test-pub-password", {
+        N: 1_024,
+        salt: Buffer.alloc(16, 7)
+    });
+    assert.equal(passwordHash.includes("test-pub-password"), false);
+    assert.equal(await verifyPassword("test-pub-password", passwordHash), true);
+    assert.equal(await verifyPassword("wrong-password", passwordHash), false);
+
+    const options = {
+        publicUrl: "https://example.com",
+        secureCookies: true,
+        sessionSecret: "a-long-random-test-secret-that-is-at-least-32-characters",
+        basicUsername: "waterlooinn",
+        basicPasswordHash: passwordHash,
+        basicActor: "Waterloo Inn iPad",
+        adminTtlMs: 60_000,
+        now: () => now
+    };
+    const firstInstance = new SessionAuth(options);
+    const session = await firstInstance.authenticateBasic("WaterlooInn", "test-pub-password");
+    assert.equal(session.actor, "Waterloo Inn iPad");
+    assert.equal(session.role, "booking-user");
+    assert.ok(session.permissions.has("bookings:capacity"));
+
+    const setCookie = firstInstance.adminCookie(session);
+    assert.match(setCookie, /^wi_admin_session=/);
+    assert.match(setCookie, /HttpOnly/);
+    assert.match(setCookie, /SameSite=Strict/);
+    assert.match(setCookie, /Secure/);
+    const cookie = setCookie.split(";")[0];
+
+    const restartedInstance = new SessionAuth(options);
+    const authenticated = await restartedInstance.requireAdmin(request({ cookie }), "bookings:write");
+    assert.equal(authenticated.identityId, "basic:waterlooinn");
+    assert.equal(authenticated.authMethod, "password");
+
+    assert.equal(await restartedInstance.authenticateBasic("waterlooinn", "wrong-password"), null);
+    assert.equal(await restartedInstance.authenticateBasic("wrong-user", "test-pub-password"), null);
+
+    const changedHash = await hashPassword("new-password", {
+        N: 1_024,
+        salt: Buffer.alloc(16, 8)
+    });
+    const changedCredentials = new SessionAuth({ ...options, basicPasswordHash: changedHash });
+    await assert.rejects(
+        changedCredentials.requireAdmin(request({ cookie })),
+        /authentication is required/
+    );
+
+    now += 60_001;
+    await assert.rejects(
+        restartedInstance.requireAdmin(request({ cookie })),
+        /authentication is required/
     );
 });
 

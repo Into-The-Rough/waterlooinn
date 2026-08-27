@@ -12,6 +12,7 @@ const JSON_HEADERS = {
 };
 
 const SAFE_SERVICE_ERRORS = new Set([
+    "BASIC_AUTH_UNAVAILABLE",
     "EMAIL_UNAVAILABLE",
     "IDENTITY_UNAVAILABLE",
     "ONLINE_BOOKINGS_CLOSED"
@@ -135,14 +136,43 @@ async function route(request, url, requestId) {
         return json(200, { enabled: state.enabled });
     }
 
-    if (request.method === "GET" && pathname === "/api/admin/session") {
-        const session = await auth.requireAdmin(legacy, "bookings:read");
+    if (request.method === "POST" && pathname === "/api/admin/session") {
+        auth.assertSameOrigin(legacy);
+        const input = await readJson(request);
+        const loginName = String(input.username || "").trim().toLowerCase();
+        await checkRateLimit(request, "admin-password-login-ip", 20, 15 * 60 * 1000);
+        await checkRateLimit(
+            request,
+            "admin-password-login-account",
+            5,
+            15 * 60 * 1000,
+            loginName || "missing"
+        );
+        const session = await auth.authenticateBasic(input.username, input.password);
+        if (!session) {
+            throw Object.assign(new Error("Username or password is incorrect."), {
+                status: 401,
+                code: "INVALID_CREDENTIALS"
+            });
+        }
         await store.insertAdminEvent({
-            id: crypto.randomUUID(), actor: session.actor, action: "admin_identity_verified",
+            id: crypto.randomUUID(), actor: session.actor, action: "admin_password_login",
             target_type: "session", target_id: session.identityId, details: "", request_id: requestId,
             created_at: new Date().toISOString()
         });
-        return json(200, { actor: session.actor, role: session.role });
+        return json(200, { actor: session.actor, role: session.role }, {
+            "Set-Cookie": auth.adminCookie(session)
+        });
+    }
+
+    if (request.method === "GET" && pathname === "/api/admin/session") {
+        const session = await auth.requireAdmin(legacy, "bookings:read");
+        await store.insertAdminEvent({
+            id: crypto.randomUUID(), actor: session.actor, action: "admin_session_verified",
+            target_type: "session", target_id: session.identityId, details: "", request_id: requestId,
+            created_at: new Date().toISOString()
+        });
+        return json(200, { actor: session.actor, role: session.role, authMethod: session.authMethod || "identity" });
     }
 
     if (request.method === "DELETE" && pathname === "/api/admin/session") {
@@ -153,7 +183,7 @@ async function route(request, url, requestId) {
             target_type: "session", target_id: null, details: "", request_id: requestId,
             created_at: new Date().toISOString()
         });
-        return json(200, { ok: true });
+        return json(200, { ok: true }, { "Set-Cookie": auth.clearAdminCookie() });
     }
 
     let adminSession = null;

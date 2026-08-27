@@ -106,18 +106,16 @@
 
     async function api(url, options) {
         var settings = Object.assign({}, options || {});
-        var identityToken;
+        var identityToken = null;
         try {
-            identityToken = await window.bookingIdentity.token();
-        } catch (error) {
-            if (error.code === "AUTH_REQUIRED") window.location.replace("/admin/bookings/login/");
-            throw error;
-        }
+            identityToken = await window.bookingIdentity.optionalToken();
+        } catch (_error) {}
         settings.headers = Object.assign({
             "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + identityToken
+            "Content-Type": "application/json"
         }, settings.headers || {});
+        if (identityToken) settings.headers.Authorization = "Bearer " + identityToken;
+        settings.credentials = "same-origin";
         var response = await fetch(url, settings);
         if (response.status === 401) {
             window.location.href = "/admin/bookings/login/";
@@ -902,8 +900,10 @@
             try {
                 await api("/api/admin/session", { method: "DELETE", body: "{}" });
             } finally {
-                await window.bookingIdentity.logout();
-                window.location.href = "/admin/";
+                try {
+                    await window.bookingIdentity.logout();
+                } catch (_error) {}
+                window.location.href = "/admin/bookings/login/";
             }
         });
     }
