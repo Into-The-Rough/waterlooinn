@@ -67,8 +67,9 @@ available for one-off closures without changing the regular weekly schedule.
   function cold starts and cannot be altered without invalidating its signature.
 - Management tokens are stored only as SHA-256 hashes, expire after service plus
   a short grace period, and rotate when a replacement email is accepted.
-- Production bookings remain pending for 15 minutes until the email link is used;
-  the pending hold counts against capacity and expires automatically.
+- Website bookings are confirmed immediately and count against capacity even if
+  their email is delayed, filtered as junk or fails to send. Delivery failures are
+  flagged in the admin diary rather than expiring the reservation.
 - Booking and waitlist creation require idempotency keys. Capacity decisions and
   insertions are serialised in Postgres transactions using a shared row lock;
   reminder and waitlist sends use database delivery claims.
@@ -95,12 +96,14 @@ be set explicitly in Netlify. Netlify provides `NETLIFY_DB_URL` automatically;
 never commit it. The SQL migration creates a fresh database with bookings off and
 peak capacity set to 30.
 
-The public form requires working customer email delivery before it accepts a
-booking. Booking staff sign in at `/admin/bookings/login/` with the optional
-booking-only username/password account, or use the existing invited Identity
-account as a fallback. The password is stored only as a salted scrypt hash. Its
-secure HTTP-only session lasts 30 days by default and changing the configured
-username or hash immediately invalidates existing password sessions.
+The public form confirms a valid booking before reporting email delivery status.
+Customer and staff messages are sent through Resend, but email delivery does not
+control whether the reservation remains in the diary. Booking staff sign in at
+`/admin/bookings/login/` with the optional booking-only username/password account,
+or use the existing invited Identity account as a fallback. The password is stored
+only as a salted scrypt hash. Its secure HTTP-only session lasts 30 days by default
+and changing the configured username or hash immediately invalidates existing
+password sessions.
 
 Configure `BOOKING_BASIC_AUTH_USERNAME`, `BOOKING_BASIC_AUTH_PASSWORD_HASH` and
 optionally `BOOKING_BASIC_AUTH_ACTOR` and `BOOKING_BASIC_AUTH_SESSION_DAYS` in

@@ -13,7 +13,7 @@ export const publicUrl = String(
 
 export const store = new PostgresBookingStore();
 export const mailer = new EmailService(store, { publicUrl });
-export const service = new BookingService(store, mailer, { requireEmailVerification: true });
+export const service = new BookingService(store, mailer, { requireEmailVerification: false });
 export const auth = new SessionAuth({
     publicUrl,
     identityUrl: process.env.BOOKING_IDENTITY_URL || `${publicUrl}/.netlify/identity`,

@@ -106,7 +106,7 @@ class BookingService {
         this.mailer = mailer;
         this.now = options.now || (() => new Date());
         this.requireEmailVerification = options.requireEmailVerification ??
-            (process.env.BOOKING_REQUIRE_EMAIL_VERIFICATION === "true" || process.env.NODE_ENV === "production");
+            process.env.BOOKING_REQUIRE_EMAIL_VERIFICATION === "true";
     }
 
     nowDate() {
