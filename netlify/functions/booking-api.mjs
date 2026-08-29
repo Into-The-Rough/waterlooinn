@@ -197,7 +197,8 @@ async function route(request, url, requestId) {
         return json(200, {
             ok: true,
             mode: "netlify-functions-postgres",
-            emailDelivery: mailer.apiKey ? "resend" : "not-configured"
+            emailDelivery: mailer.apiKey ? "resend" : "not-configured",
+            bookingConfirmation: service.requireEmailVerification ? "email-required" : "instant"
         });
     }
 

@@ -313,7 +313,8 @@ async function handleApi(request, response, url) {
         return sendJson(response, 200, {
             ok: true,
             mode: "local",
-            emailDelivery: process.env.RESEND_API_KEY ? "resend" : "local-preview"
+            emailDelivery: process.env.RESEND_API_KEY ? "resend" : "local-preview",
+            bookingConfirmation: service.requireEmailVerification ? "email-required" : "instant"
         });
     }
 

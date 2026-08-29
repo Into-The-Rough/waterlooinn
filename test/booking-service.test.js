@@ -201,6 +201,27 @@ test("creates a confirmed booking and customer/staff email previews", async (t) 
     );
 });
 
+test("failed email delivery does not expire a confirmed website booking", async (t) => {
+    let now = new Date("2026-07-28T10:00:00Z");
+    const { store, mailer, service } = await createFixture({ now: () => now });
+    t.after(() => store.close());
+    mailer.sendBookingEmails = async () => [
+        { kind: "customer_confirmation", status: "failed" },
+        { kind: "staff_notification", status: "failed" }
+    ];
+
+    const result = await service.createBooking(bookingInput());
+    assert.equal(result.booking.status, "confirmed");
+    assert.equal(result.booking.holdExpiresAt, null);
+    assert.equal(result.emailStatus, "failed");
+
+    now = new Date("2026-07-28T11:00:00Z");
+    const diary = await service.listDiary("2026-07-29");
+    assert.equal(diary.bookings[0].status, "confirmed");
+    assert.equal(diary.summary.bookingCount, 1);
+    assert.equal(diary.summary.covers, 4);
+});
+
 test("enforces overlapping cover capacity", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());
@@ -521,7 +542,7 @@ test("concurrent reminder attempts claim delivery once", async (t) => {
     assert.equal(reminders.filter((item) => item.prepared).length, 1);
 });
 
-test("production-style bookings hold capacity until email confirmation", async (t) => {
+test("email-verification holds remain available only when explicitly enabled", async (t) => {
     const { store, service } = await createFixture({ requireEmailVerification: true });
     t.after(() => store.close());
     const result = await service.createBooking(bookingInput());
