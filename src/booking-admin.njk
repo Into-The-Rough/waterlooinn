@@ -79,6 +79,28 @@ permalink: /admin/bookings/
             </div>
         </section>
 
+        <section class="admin-panel admin-service-hours-panel" aria-labelledby="service-hours-heading">
+            <div class="admin-panel-heading">
+                <div>
+                    <p class="admin-eyebrow">Regular availability</p>
+                    <h2 id="service-hours-heading">Food table booking times</h2>
+                </div>
+                <p class="admin-service-hours-note">
+                    Closed days offer no online table bookings, including drinks-only bookings.
+                    Existing bookings are kept in the diary.
+                </p>
+            </div>
+            <form data-service-hours-form>
+                <div class="admin-service-hours-list" data-service-hours-list>
+                    <div class="admin-loading">Loading weekly schedule…</div>
+                </div>
+                <div class="admin-service-hours-footer">
+                    <small data-service-hours-updated>No weekly changes yet.</small>
+                    <button type="submit" class="admin-button">Save weekly schedule</button>
+                </div>
+            </form>
+        </section>
+
         <section class="admin-panel admin-calendar-panel" aria-labelledby="calendar-heading">
             <div class="admin-panel-heading admin-calendar-heading">
                 <div>

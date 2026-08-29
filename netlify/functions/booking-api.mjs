@@ -133,7 +133,7 @@ async function route(request, url, requestId) {
 
     if (request.method === "GET" && pathname === "/api/booking-status") {
         const state = await service.getOnlineBookingState();
-        return json(200, { enabled: state.enabled });
+        return json(200, { enabled: state.enabled, serviceHours: state.serviceHours });
     }
 
     if (request.method === "POST" && pathname === "/api/admin/session") {
@@ -309,7 +309,8 @@ async function route(request, url, requestId) {
         const input = await readJson(request);
         const hasEnabled = Object.hasOwn(input, "enabled");
         const hasMaxCovers = Object.hasOwn(input, "maxCovers");
-        if (!hasEnabled && !hasMaxCovers) {
+        const hasServiceHours = Object.hasOwn(input, "serviceHours");
+        if (!hasEnabled && !hasMaxCovers && !hasServiceHours) {
             throw Object.assign(new Error("No booking setting was provided."), {
                 status: 400,
                 code: "VALIDATION_ERROR"
@@ -317,6 +318,7 @@ async function route(request, url, requestId) {
         }
         if (hasEnabled) await service.setOnlineBookingsEnabled(input.enabled, audit());
         if (hasMaxCovers) await service.setMaxOnlineCovers(input.maxCovers, audit());
+        if (hasServiceHours) await service.setServiceHours(input.serviceHours, audit());
         return json(200, await service.getOnlineBookingState());
     }
 

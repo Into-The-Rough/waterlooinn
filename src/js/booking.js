@@ -42,6 +42,7 @@
         if (!form) return;
 
         var closedPanel = widget.querySelector("[data-online-bookings-closed]");
+        var serviceSummary = widget.querySelector("[data-booking-service-summary]");
 
         var dateInput = form.elements.date;
         var partyInput = form.elements.partySize;
@@ -81,6 +82,21 @@
             closedPanel.hidden = false;
         }
 
+        function joinDayNames(days) {
+            if (!days.length) return "No regular food booking days are currently available.";
+            if (days.length === 1) return days[0];
+            return days.slice(0, -1).join(", ") + " and " + days.at(-1);
+        }
+
+        function renderServiceSummary(serviceHours) {
+            if (!Array.isArray(serviceHours)) return;
+            var openDays = serviceHours.filter(function (day) { return day.enabled; })
+                .map(function (day) { return day.label; });
+            serviceSummary.textContent = openDays.length
+                ? "Regular food bookings: " + joinDayNames(openDays) + "."
+                : joinDayNames(openDays);
+        }
+
         async function checkBookingStatus() {
             try {
                 var response = await fetch("/api/booking-status", {
@@ -88,6 +104,7 @@
                 });
                 var state = await response.json();
                 if (!response.ok) throw new Error("Online booking status could not be checked.");
+                renderServiceSummary(state.serviceHours);
                 if (!state.enabled) {
                     showBookingClosed();
                     return;
@@ -205,6 +222,8 @@
                 }
                 renderSlots(data);
             } catch (error) {
+                waitlistOffer.hidden = true;
+                waitlistPanel.hidden = true;
                 prompt.textContent = error.message;
                 prompt.classList.add("is-unavailable");
             } finally {

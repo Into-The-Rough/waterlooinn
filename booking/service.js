@@ -3,10 +3,11 @@
 const crypto = require("node:crypto");
 const {
     BOOKING_CONFIG,
+    WEEKDAY_LABELS,
     dateDistance,
     formatTime,
-    generateSlots,
-    getServiceRule,
+    generateSlotsForRule,
+    getWeekday,
     isIsoDate,
     timeToMinutes,
     venueDateTime,
@@ -26,6 +27,8 @@ const VALID_STATUSES = new Set([
 const VALID_SOURCES = new Set(["web", "phone", "walk_in", "admin"]);
 const VALID_AREAS = new Set(BOOKING_CONFIG.areas);
 const VALID_WAITLIST_STATUSES = new Set(["waiting", "notified", "booked", "closed"]);
+const SERVICE_HOURS_KEY = "weekly_food_booking_hours";
+const WEEKDAY_DISPLAY_ORDER = Object.freeze([1, 2, 3, 4, 5, 6, 0]);
 
 function tokenHash(token) {
     return crypto.createHash("sha256").update(String(token || "")).digest("hex");
@@ -183,18 +186,129 @@ class BookingService {
         });
     }
 
+    defaultServiceHours() {
+        return WEEKDAY_DISPLAY_ORDER.map((weekday) => {
+            const rule = BOOKING_CONFIG.serviceHours[weekday];
+            return {
+                weekday,
+                label: WEEKDAY_LABELS[weekday],
+                enabled: Boolean(rule),
+                start: rule?.start || "12:00",
+                end: rule?.end || "20:00"
+            };
+        });
+    }
+
+    normaliseServiceHours(value) {
+        if (!Array.isArray(value) || value.length !== 7) {
+            throw validationError("Please provide food booking hours for all seven days.", "serviceHours");
+        }
+        const defaults = new Map(this.defaultServiceHours().map((day) => [day.weekday, day]));
+        const seen = new Set();
+        const days = value.map((entry) => {
+            const weekday = Number(entry?.weekday);
+            if (!Number.isInteger(weekday) || weekday < 0 || weekday > 6 || seen.has(weekday)) {
+                throw validationError("Each weekday must appear once in the food booking schedule.", "serviceHours");
+            }
+            seen.add(weekday);
+            if (typeof entry.enabled !== "boolean") {
+                throw validationError("Each weekday must be marked as open or closed for food bookings.", "serviceHours");
+            }
+            const fallback = defaults.get(weekday);
+            const start = cleanText(entry.start || fallback.start, 5);
+            const end = cleanText(entry.end || fallback.end, 5);
+            const startMinutes = timeToMinutes(start);
+            const endMinutes = timeToMinutes(end);
+            if (Number.isNaN(startMinutes) || Number.isNaN(endMinutes) ||
+                startMinutes % BOOKING_CONFIG.slotMinutes !== 0 ||
+                endMinutes % BOOKING_CONFIG.slotMinutes !== 0) {
+                throw validationError("Food booking times must use 30-minute intervals.", "serviceHours");
+            }
+            if (entry.enabled && startMinutes > endMinutes) {
+                throw validationError(`${WEEKDAY_LABELS[weekday]}'s last booking must be after its first booking.`, "serviceHours");
+            }
+            return {
+                weekday,
+                label: WEEKDAY_LABELS[weekday],
+                enabled: entry.enabled,
+                start,
+                end
+            };
+        });
+        return WEEKDAY_DISPLAY_ORDER.map((weekday) => days.find((day) => day.weekday === weekday));
+    }
+
+    async getServiceHours() {
+        const stored = await this.store.getAppMeta(SERVICE_HOURS_KEY);
+        if (!stored) return this.defaultServiceHours();
+        try {
+            return this.normaliseServiceHours(JSON.parse(stored));
+        } catch {
+            return this.defaultServiceHours();
+        }
+    }
+
+    serviceRuleForDate(date, serviceHours) {
+        const weekday = getWeekday(date);
+        const day = serviceHours.find((entry) => entry.weekday === weekday);
+        if (!day?.enabled) return null;
+        return { start: day.start, end: day.end, label: day.label };
+    }
+
+    async getServiceRule(date) {
+        return this.serviceRuleForDate(date, await this.getServiceHours());
+    }
+
+    slotsForDate(date, serviceHours) {
+        return generateSlotsForRule(this.serviceRuleForDate(date, serviceHours));
+    }
+
+    async generateSlots(date) {
+        return this.slotsForDate(date, await this.getServiceHours());
+    }
+
+    async setServiceHours(value, audit = {}) {
+        const serviceHours = this.normaliseServiceHours(value);
+        const actor = cleanText(audit.actor || "Admin", 100);
+        const updatedAt = this.nowIso();
+        const details = serviceHours.map((day) => day.enabled
+            ? `${day.label.slice(0, 3)} ${day.start}–${day.end}`
+            : `${day.label.slice(0, 3)} closed`).join("; ");
+        await this.store.transaction(async () => {
+            await this.store.setAppMeta(SERVICE_HOURS_KEY, JSON.stringify(serviceHours));
+            await this.store.setAppMeta("weekly_food_booking_hours_updated_at", updatedAt);
+            await this.store.setAppMeta("weekly_food_booking_hours_updated_by", actor);
+            await this.appendAdminEvent(
+                actor,
+                "weekly_food_booking_hours_changed",
+                "booking_settings",
+                "weekly_food_booking_hours",
+                details,
+                audit.requestId
+            );
+        });
+        return this.getOnlineBookingState();
+    }
+
     async getOnlineBookingState() {
-        const [enabled, maxCovers, updatedAt, updatedBy] = await Promise.all([
+        const [enabled, maxCovers, updatedAt, updatedBy, serviceHours,
+            serviceHoursUpdatedAt, serviceHoursUpdatedBy] = await Promise.all([
             this.store.getAppMeta("online_bookings_enabled", "false"),
             this.getMaxOnlineCovers(),
             this.store.getAppMeta("online_bookings_updated_at"),
-            this.store.getAppMeta("online_bookings_updated_by")
+            this.store.getAppMeta("online_bookings_updated_by"),
+            this.getServiceHours(),
+            this.store.getAppMeta("weekly_food_booking_hours_updated_at"),
+            this.store.getAppMeta("weekly_food_booking_hours_updated_by")
         ]);
         return {
             enabled: enabled === "true",
             maxCovers,
             updatedAt: updatedAt || null,
-            updatedBy: updatedBy || null
+            updatedBy: updatedBy || null,
+            serviceHours,
+            serviceHoursUpdatedAt: serviceHoursUpdatedAt || null,
+            serviceHoursUpdatedBy: serviceHoursUpdatedBy || null
         };
     }
 
@@ -263,7 +377,7 @@ class BookingService {
         return this.getOnlineBookingState();
     }
 
-    validateDate(date, { allowPast = false, allowClosedDay = false } = {}) {
+    async validateDate(date, { allowPast = false, allowClosedDay = false, serviceHours = null } = {}) {
         if (!isIsoDate(date)) throw validationError("Please choose a valid date.", "date");
         const current = venueNow(this.nowDate());
         const distance = dateDistance(current.date, date);
@@ -273,8 +387,15 @@ class BookingService {
         if (!allowPast && distance > BOOKING_CONFIG.maximumAdvanceDays) {
             throw validationError(`Bookings are available up to ${BOOKING_CONFIG.maximumAdvanceDays} days ahead.`, "date");
         }
-        if (!allowClosedDay && !getServiceRule(date)) {
-            throw validationError("Online table bookings are not available on this day.", "date", "CLOSED_DAY");
+        if (!allowClosedDay) {
+            const schedule = serviceHours || await this.getServiceHours();
+            if (!this.serviceRuleForDate(date, schedule)) {
+                throw validationError(
+                    `Food table bookings are not available on ${WEEKDAY_LABELS[getWeekday(date)]}s. Please choose another day.`,
+                    "date",
+                    "CLOSED_DAY"
+                );
+            }
         }
         return date;
     }
@@ -301,7 +422,8 @@ class BookingService {
 
     async getAvailability(date, partySizeValue, excludeId = "") {
         await this.store.expirePendingHolds(this.nowIso());
-        const validDate = this.validateDate(date);
+        const serviceHours = await this.getServiceHours();
+        const validDate = await this.validateDate(date, { serviceHours });
         const partySize = this.validatePartySize(partySizeValue);
         const current = venueNow(this.nowDate());
         const blocks = await this.store.listBlocks(validDate);
@@ -309,7 +431,7 @@ class BookingService {
         const wholeDayBlocked = blockedTimes.has("*");
         const maxOnlineCovers = await this.getMaxOnlineCovers();
         const slots = [];
-        for (const time of generateSlots(validDate)) {
+        for (const time of this.slotsForDate(validDate, serviceHours)) {
             const usedCovers = await this.overlappingCovers(
                 validDate,
                 time,
@@ -337,7 +459,7 @@ class BookingService {
         return {
             date: validDate,
             partySize,
-            service: getServiceRule(validDate),
+            service: this.serviceRuleForDate(validDate, serviceHours),
             slotMinutes: BOOKING_CONFIG.slotMinutes,
             durationMinutes: BOOKING_CONFIG.durationMinutes,
             slots
@@ -363,17 +485,19 @@ class BookingService {
         return this.getAvailability(date, partySize, id);
     }
 
-    normaliseInput(input, { admin = false, allowPast = false } = {}) {
-        const date = this.validateDate(input.date, {
+    async normaliseInput(input, { admin = false, allowPast = false } = {}) {
+        const serviceHours = await this.getServiceHours();
+        const date = await this.validateDate(input.date, {
             allowPast,
-            allowClosedDay: admin
+            allowClosedDay: admin,
+            serviceHours
         });
         const partySize = this.validatePartySize(input.partySize);
         const time = cleanText(input.time, 5);
         if (!/^\d{2}:\d{2}$/.test(time)) {
             throw validationError("Please choose an available time.", "time");
         }
-        if (!admin && !generateSlots(date).includes(time)) {
+        if (!admin && !this.slotsForDate(date, serviceHours).includes(time)) {
             throw validationError("Please choose an available time.", "time");
         }
         const name = cleanText(input.name, 100);
@@ -415,7 +539,7 @@ class BookingService {
         requestId = null
     } = {}) {
         if (!admin) await this.requireOnlineBookingsEnabled();
-        const value = this.normaliseInput(input, { admin });
+        const value = await this.normaliseInput(input, { admin });
         if (!admin && value.emailSuggestion && input.acceptEmailSuggestion !== true) {
             throw Object.assign(
                 validationError(
@@ -623,7 +747,7 @@ class BookingService {
             throw validationError("This booking can no longer be changed online.", null, "CANNOT_AMEND");
         }
         const existing = await this.store.getBooking(id);
-        const value = this.normaliseInput({
+        const value = await this.normaliseInput({
             date: input.date ?? existing.booking_date,
             time: input.time ?? existing.booking_time,
             partySize: input.partySize ?? existing.party_size,
@@ -761,12 +885,13 @@ class BookingService {
     }
 
     async listDiary(date) {
-        this.validateDate(date, { allowPast: true, allowClosedDay: true });
+        await this.validateDate(date, { allowPast: true, allowClosedDay: true });
         await this.store.expirePendingHolds(this.nowIso());
-        const [rows, blocks, waitlistRows] = await Promise.all([
+        const [rows, blocks, waitlistRows, serviceHours] = await Promise.all([
             this.store.listBookings(date),
             this.store.listBlocks(date),
-            this.store.listWaitlist(date)
+            this.store.listWaitlist(date),
+            this.getServiceHours()
         ]);
         const bookings = await Promise.all(rows.map(async (row) => {
             const [emails, auditEvents, guestHistory] = await Promise.all([
@@ -800,7 +925,8 @@ class BookingService {
             }))
         })));
         const active = bookings.filter((booking) => ACTIVE_STATUSES.has(booking.status));
-        const coverCounts = await Promise.all(generateSlots(date).map((time) =>
+        const slots = this.slotsForDate(date, serviceHours);
+        const coverCounts = await Promise.all(slots.map((time) =>
             this.overlappingCovers(date, time, BOOKING_CONFIG.durationMinutes)
         ));
         const peakCovers = Math.max(0, ...coverCounts);
@@ -819,8 +945,8 @@ class BookingService {
                 maxOnlineCovers,
                 serviceHours: undefined
             },
-            service: getServiceRule(date),
-            slots: generateSlots(date),
+            service: this.serviceRuleForDate(date, serviceHours),
+            slots,
             bookings,
             waitlist,
             blocks,
@@ -843,7 +969,10 @@ class BookingService {
             throw validationError("Please choose a valid month.", "month");
         }
         await this.store.expirePendingHolds(this.nowIso());
-        const maxOnlineCovers = await this.getMaxOnlineCovers();
+        const [maxOnlineCovers, serviceHours] = await Promise.all([
+            this.getMaxOnlineCovers(),
+            this.getServiceHours()
+        ]);
         const daysInMonth = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate();
         const days = [];
 
@@ -852,9 +981,9 @@ class BookingService {
             const rows = await this.store.listBookings(date);
             const activeRows = rows.filter((booking) => ACTIVE_STATUSES.has(booking.status));
             const blocks = await this.store.listBlocks(date);
-            const serviceRule = getServiceRule(date);
+            const serviceRule = this.serviceRuleForDate(date, serviceHours);
             const candidateTimes = new Set([
-                ...generateSlots(date),
+                ...this.slotsForDate(date, serviceHours),
                 ...activeRows.map((booking) => booking.booking_time)
             ]);
             let peakCovers = 0;
@@ -920,7 +1049,7 @@ class BookingService {
             area: input.area ?? existing.area,
             tableLabel: input.tableLabel ?? existing.table_label
         };
-        const value = this.normaliseInput(merged, { admin: true, allowPast: true });
+        const value = await this.normaliseInput(merged, { admin: true, allowPast: true });
         const status = input.status ?? existing.status;
         if (!VALID_STATUSES.has(status)) throw validationError("Please choose a valid booking status.", "status");
         if (["pending", "expired"].includes(status) && status !== existing.status) {
@@ -1162,10 +1291,11 @@ class BookingService {
         if (!/^[A-Za-z0-9._:-]{16,128}$/.test(String(idempotencyKey || ""))) {
             throw validationError("A valid waiting-list request identifier is required.", null, "IDEMPOTENCY_REQUIRED");
         }
-        const date = this.validateDate(input.date);
+        const serviceHours = await this.getServiceHours();
+        const date = await this.validateDate(input.date, { serviceHours });
         const partySize = this.validatePartySize(input.partySize);
         const time = cleanText(input.time, 5);
-        if (!generateSlots(date).includes(time)) {
+        if (!this.slotsForDate(date, serviceHours).includes(time)) {
             throw validationError("Please choose a valid time.", "time");
         }
         const name = cleanText(input.name, 100);
@@ -1282,9 +1412,9 @@ class BookingService {
     }
 
     async createBlock(input, audit = {}) {
-        const date = this.validateDate(input.date, { allowPast: false, allowClosedDay: true });
+        const date = await this.validateDate(input.date, { allowPast: false, allowClosedDay: true });
         const time = input.time === "*" ? "*" : cleanText(input.time, 5);
-        if (time !== "*" && !generateSlots(date).includes(time)) {
+        if (time !== "*" && !(await this.generateSlots(date)).includes(time)) {
             throw validationError("Please choose a valid time to close.", "time");
         }
         try {

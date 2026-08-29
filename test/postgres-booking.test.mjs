@@ -26,12 +26,14 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
         requireEmailVerification: false
     });
 
-    assert.deepEqual(await service.getOnlineBookingState(), {
-        enabled: false,
-        maxCovers: 30,
-        updatedAt: null,
-        updatedBy: null
-    });
+    const initialState = await service.getOnlineBookingState();
+    assert.equal(initialState.enabled, false);
+    assert.equal(initialState.maxCovers, 30);
+    assert.equal(initialState.updatedAt, null);
+    assert.equal(initialState.updatedBy, null);
+    assert.equal(initialState.serviceHours.length, 7);
+    assert.equal(initialState.serviceHours.find((day) => day.weekday === 2).enabled, false);
+    assert.equal(initialState.serviceHoursUpdatedAt, null);
     await service.setMaxOnlineCovers(8, { actor: "Test manager" });
     await service.setOnlineBookingsEnabled(true, { actor: "Test manager" });
 
@@ -68,7 +70,9 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
     const response = await apiHandler(new Request("https://example.com/api/booking-status"));
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("cache-control"), "no-store");
-    assert.deepEqual(await response.json(), { enabled: true });
+    const statusBody = await response.json();
+    assert.equal(statusBody.enabled, true);
+    assert.equal(statusBody.serviceHours.length, 7);
 
     await functionRuntime.service.setOnlineBookingsEnabled(false, { actor: "Test manager" });
     const closedResponse = await apiHandler(new Request(
