@@ -42,6 +42,19 @@ number of guests whose two-hour bookings may overlap at any one time. It default
 to 30, can be changed without restarting the server, and is reflected immediately
 in public availability, the daily summary and the monthly calendar.
 
+### Weekly food booking times
+
+The **Food table booking times** panel in the admin diary controls the regular
+seven-day booking schedule. Staff can mark each weekday open or closed and set
+the first and last half-hour arrival time. Changes take effect immediately on the
+public form and are recorded in the global audit log.
+
+Online booking is for food tables only: a closed weekday offers no public table
+bookings or waiting-list requests, including drinks-only bookings. Closing a day
+does not delete bookings already in the diary, and staff can still add a telephone
+or walk-in booking when needed. The separate **Close dates or times** control is
+available for one-off closures without changing the regular weekly schedule.
+
 ## Security behaviour
 
 - The diary reuses the site's existing invite-only Netlify Identity. Every admin

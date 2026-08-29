@@ -1413,6 +1413,15 @@ legend.booking-step-heading + * {
     margin-top: 4px;
 }
 
+.booking-step-heading .booking-service-summary {
+    margin-top: 9px;
+}
+
+.booking-service-summary-label {
+    color: var(--gold);
+    font-weight: 700;
+}
+
 .booking-search-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }

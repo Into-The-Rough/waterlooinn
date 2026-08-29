@@ -22,6 +22,9 @@
     var capacityInput = capacityForm.elements.maxCovers;
     var capacitySubmit = capacityForm.querySelector('button[type="submit"]');
     var capacityOverrideLabel = document.querySelector("[data-capacity-override-label]");
+    var serviceHoursForm = document.querySelector("[data-service-hours-form]");
+    var serviceHoursList = document.querySelector("[data-service-hours-list]");
+    var serviceHoursUpdated = document.querySelector("[data-service-hours-updated]");
     var diary = null;
     var calendar = null;
     var calendarMonth = "";
@@ -126,6 +129,38 @@
         return result;
     }
 
+    function updateServiceDayState(row) {
+        var enabled = row.querySelector('[data-service-enabled]');
+        var status = row.querySelector('[data-service-status]');
+        row.classList.toggle("is-closed", !enabled.checked);
+        status.textContent = enabled.checked ? "OPEN" : "CLOSED";
+        row.querySelectorAll('input[type="time"]').forEach(function (input) {
+            input.disabled = !enabled.checked;
+            input.required = enabled.checked;
+        });
+    }
+
+    function renderServiceHours(days) {
+        serviceHoursList.innerHTML = days.map(function (day) {
+            return '<div class="admin-service-day" data-service-day="' + Number(day.weekday) + '">' +
+                '<label class="admin-service-day-toggle">' +
+                    '<input type="checkbox" data-service-enabled' + (day.enabled ? " checked" : "") + '>' +
+                    '<span>' + escapeHtml(day.label) + '</span>' +
+                    '<strong data-service-status></strong>' +
+                '</label>' +
+                '<div class="admin-service-day-times">' +
+                    '<label>First<input type="time" data-service-start step="1800" value="' + escapeHtml(day.start) + '"></label>' +
+                    '<label>Last<input type="time" data-service-end step="1800" value="' + escapeHtml(day.end) + '"></label>' +
+                '</div>' +
+            '</div>';
+        }).join("");
+        serviceHoursList.querySelectorAll("[data-service-day]").forEach(function (row) {
+            var toggle = row.querySelector("[data-service-enabled]");
+            toggle.addEventListener("change", function () { updateServiceDayState(row); });
+            updateServiceDayState(row);
+        });
+    }
+
     function renderBookingSettings(state) {
         masterToggle.checked = state.enabled;
         masterToggle.disabled = false;
@@ -142,6 +177,11 @@
         capacityInput.disabled = false;
         capacitySubmit.disabled = false;
         capacityOverrideLabel.textContent = "Override the " + state.maxCovers + "-cover limit";
+        if (Array.isArray(state.serviceHours)) renderServiceHours(state.serviceHours);
+        serviceHoursUpdated.textContent = state.serviceHoursUpdatedAt
+            ? "Last changed " + formatDateTime(state.serviceHoursUpdatedAt) +
+                (state.serviceHoursUpdatedBy ? " by " + state.serviceHoursUpdatedBy : "")
+            : "Using the default weekly food booking schedule.";
     }
 
     async function loadBookingSettings() {
@@ -815,6 +855,33 @@
             capacityInput.disabled = false;
             capacitySubmit.disabled = false;
             showAlert(error.message, false);
+        }
+    });
+
+    serviceHoursForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        var submit = serviceHoursForm.querySelector('button[type="submit"]');
+        var serviceHours = Array.from(serviceHoursList.querySelectorAll("[data-service-day]")).map(function (row) {
+            return {
+                weekday: Number(row.dataset.serviceDay),
+                enabled: row.querySelector("[data-service-enabled]").checked,
+                start: row.querySelector("[data-service-start]").value,
+                end: row.querySelector("[data-service-end]").value
+            };
+        });
+        submit.disabled = true;
+        try {
+            var state = await api("/api/admin/booking-settings", {
+                method: "PATCH",
+                body: JSON.stringify({ serviceHours: serviceHours })
+            });
+            renderBookingSettings(state);
+            showAlert("Weekly food table booking times saved.", true);
+            await refreshAll();
+        } catch (error) {
+            showAlert(error.message, false);
+        } finally {
+            submit.disabled = false;
         }
     });
 

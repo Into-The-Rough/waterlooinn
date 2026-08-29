@@ -32,6 +32,10 @@ const BOOKING_CONFIG = Object.freeze({
     }
 });
 
+const WEEKDAY_LABELS = Object.freeze([
+    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
+]);
+
 function isIsoDate(value) {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ""));
     if (!match) return false;
@@ -81,6 +85,10 @@ function getServiceRule(date) {
 
 function generateSlots(date) {
     const rule = getServiceRule(date);
+    return generateSlotsForRule(rule);
+}
+
+function generateSlotsForRule(rule) {
     if (!rule) return [];
     const slots = [];
     const start = timeToMinutes(rule.start);
@@ -151,10 +159,13 @@ function venueDateTime(date, time) {
 
 module.exports = {
     BOOKING_CONFIG,
+    WEEKDAY_LABELS,
     dateDistance,
     formatTime,
     generateSlots,
+    generateSlotsForRule,
     getServiceRule,
+    getWeekday,
     isIsoDate,
     minutesToTime,
     timeToMinutes,

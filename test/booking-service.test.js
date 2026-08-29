@@ -85,7 +85,55 @@ test("publishes the configured Wednesday availability", async (t) => {
     assert.equal(availability.slots.every((slot) => slot.available), true);
     await assert.rejects(
         service.getAvailability("2026-08-04", 2),
-        /not available on this day/
+        /not available on Tuesdays/
+    );
+});
+
+test("weekly food booking days and times are editable without removing existing bookings", async (t) => {
+    const { store, service } = await createFixture();
+    t.after(() => store.close());
+
+    const existing = await service.createBooking(bookingInput());
+    const defaults = (await service.getOnlineBookingState()).serviceHours;
+    const wednesday = defaults.find((day) => day.weekday === 3);
+    assert.equal(wednesday.enabled, true);
+
+    const closedWednesday = defaults.map((day) => day.weekday === 3
+        ? { ...day, enabled: false }
+        : day);
+    const closedState = await service.setServiceHours(closedWednesday, {
+        actor: "Test Manager",
+        requestId: "schedule-request-1"
+    });
+    assert.equal(closedState.serviceHours.find((day) => day.weekday === 3).enabled, false);
+    assert.equal(closedState.serviceHoursUpdatedBy, "Test Manager");
+    await assert.rejects(
+        service.getPublicAvailability("2026-07-29", 2),
+        (error) => error.code === "CLOSED_DAY" && /Wednesdays/.test(error.message)
+    );
+
+    const diary = await service.listDiary("2026-07-29");
+    assert.equal(diary.service, null);
+    assert.deepEqual(diary.slots, []);
+    assert.equal(diary.bookings[0].id, existing.booking.id);
+    const calendarDay = (await service.listCalendar("2026-07")).days
+        .find((day) => day.date === "2026-07-29");
+    assert.equal(calendarDay.isRegularServiceDay, false);
+    assert.equal(calendarDay.bookingCount, 1);
+
+    const reopenedWednesday = closedState.serviceHours.map((day) => day.weekday === 3
+        ? { ...day, enabled: true, start: "17:00", end: "19:00" }
+        : day);
+    await service.setServiceHours(reopenedWednesday, { actor: "Test Manager" });
+    const availability = await service.getAvailability("2026-07-29", 2);
+    assert.equal(availability.slots[0].time, "17:00");
+    assert.equal(availability.slots.at(-1).time, "19:00");
+
+    await assert.rejects(
+        service.setServiceHours(reopenedWednesday.map((day) => day.weekday === 3
+            ? { ...day, start: "17:15" }
+            : day)),
+        /30-minute intervals/
     );
 });
 
