@@ -400,10 +400,16 @@ class BookingService {
         return date;
     }
 
-    validatePartySize(value) {
+    validatePartySize(value, { admin = false } = {}) {
         const partySize = Number(value);
-        if (!Number.isInteger(partySize) || partySize < 1 || partySize > BOOKING_CONFIG.maxPartySize) {
-            throw validationError(`Online bookings are available for 1–${BOOKING_CONFIG.maxPartySize} guests.`, "partySize");
+        const maximum = admin ? BOOKING_CONFIG.maxAdminPartySize : BOOKING_CONFIG.maxPartySize;
+        if (!Number.isInteger(partySize) || partySize < 1 || partySize > maximum) {
+            throw validationError(
+                admin
+                    ? `Admin bookings are available for 1–${maximum} guests.`
+                    : `Online bookings are available for 1–${maximum} guests.`,
+                "partySize"
+            );
         }
         return partySize;
     }
@@ -492,7 +498,7 @@ class BookingService {
             allowClosedDay: admin,
             serviceHours
         });
-        const partySize = this.validatePartySize(input.partySize);
+        const partySize = this.validatePartySize(input.partySize, { admin });
         const time = cleanText(input.time, 5);
         if (!/^\d{2}:\d{2}$/.test(time)) {
             throw validationError("Please choose an available time.", "time");
@@ -680,7 +686,8 @@ class BookingService {
         return {
             booking: customerBooking(booking),
             canCancel: activeAndFuture && booking.status !== "pending",
-            canAmend: activeAndFuture && booking.status !== "pending",
+            canAmend: activeAndFuture && booking.status !== "pending" &&
+                booking.party_size <= BOOKING_CONFIG.maxPartySize,
             canConfirm: activeAndFuture &&
                 (booking.status === "pending" || !booking.customer_confirmed_at)
         };

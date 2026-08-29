@@ -360,7 +360,8 @@
                         '<label>Date<input type="date" name="date" value="' + escapeHtml(booking.date) + '" required></label>' +
                         '<label>Time<input type="time" name="time" step="1800" value="' + escapeHtml(booking.time) + '" required></label>' +
                         '<label>Guests<select name="partySize">' +
-                            [1,2,3,4,5,6,7,8].map(function (number) {
+                            Array.from({ length: diary.config.maxAdminPartySize }, function (_value, index) {
+                                var number = index + 1;
                                 return option(String(number), String(booking.partySize), String(number));
                             }).join("") +
                         "</select></label>" +

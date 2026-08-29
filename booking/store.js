@@ -28,7 +28,7 @@ class BookingStore {
                 booking_date TEXT NOT NULL,
                 booking_time TEXT NOT NULL,
                 duration_minutes INTEGER NOT NULL,
-                party_size INTEGER NOT NULL CHECK (party_size BETWEEN 1 AND 8),
+                party_size INTEGER NOT NULL CHECK (party_size BETWEEN 1 AND 30),
                 guest_name TEXT NOT NULL,
                 email TEXT,
                 phone TEXT,
@@ -186,6 +186,13 @@ class BookingStore {
             }
         }
 
+        const bookingTable = this.db.prepare(`
+            SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'bookings'
+        `).get();
+        if (bookingTable?.sql?.includes("party_size BETWEEN 1 AND 8")) {
+            this.migrateAdminPartySizeLimit();
+        }
+
         const eventColumns = new Set(
             this.db.prepare("PRAGMA table_info(booking_events)").all().map((column) => column.name)
         );
@@ -221,6 +228,74 @@ class BookingStore {
             `).run("manage_token_version", "2");
         }
 
+    }
+
+    migrateAdminPartySizeLimit() {
+        const columns = [
+            "id", "reference", "booking_date", "booking_time", "duration_minutes",
+            "party_size", "guest_name", "email", "phone", "requests", "internal_notes",
+            "source", "status", "cancellation_token_hash", "stable_manage_token_hash",
+            "manage_token_expires_at", "idempotency_key", "email_status", "created_at",
+            "updated_at", "cancelled_at", "call_confirmed_at", "customer_confirmed_at",
+            "reminder_sent_at", "reminder_claimed_at", "hold_expires_at", "area", "table_label"
+        ].join(", ");
+
+        this.db.exec("PRAGMA foreign_keys = OFF; BEGIN IMMEDIATE;");
+        try {
+            this.db.exec(`
+                DROP TABLE IF EXISTS bookings_party_limit_migration;
+                CREATE TABLE bookings_party_limit_migration (
+                    id TEXT PRIMARY KEY,
+                    reference TEXT NOT NULL UNIQUE,
+                    booking_date TEXT NOT NULL,
+                    booking_time TEXT NOT NULL,
+                    duration_minutes INTEGER NOT NULL,
+                    party_size INTEGER NOT NULL CHECK (party_size BETWEEN 1 AND 30),
+                    guest_name TEXT NOT NULL,
+                    email TEXT,
+                    phone TEXT,
+                    requests TEXT NOT NULL DEFAULT '',
+                    internal_notes TEXT NOT NULL DEFAULT '',
+                    source TEXT NOT NULL DEFAULT 'web',
+                    status TEXT NOT NULL DEFAULT 'confirmed',
+                    cancellation_token_hash TEXT UNIQUE,
+                    stable_manage_token_hash TEXT UNIQUE,
+                    manage_token_expires_at TEXT,
+                    idempotency_key TEXT UNIQUE,
+                    email_status TEXT NOT NULL DEFAULT 'pending',
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    cancelled_at TEXT,
+                    call_confirmed_at TEXT,
+                    customer_confirmed_at TEXT,
+                    reminder_sent_at TEXT,
+                    reminder_claimed_at TEXT,
+                    hold_expires_at TEXT,
+                    area TEXT NOT NULL DEFAULT 'Restaurant',
+                    table_label TEXT NOT NULL DEFAULT ''
+                );
+                INSERT INTO bookings_party_limit_migration (${columns})
+                    SELECT ${columns} FROM bookings;
+                DROP TABLE bookings;
+                ALTER TABLE bookings_party_limit_migration RENAME TO bookings;
+                CREATE INDEX idx_bookings_date ON bookings (booking_date, booking_time);
+                CREATE INDEX idx_bookings_status ON bookings (status);
+                CREATE UNIQUE INDEX idx_bookings_idempotency
+                    ON bookings (idempotency_key) WHERE idempotency_key IS NOT NULL;
+                COMMIT;
+            `);
+        } catch (error) {
+            try {
+                this.db.exec("ROLLBACK;");
+            } catch {}
+            throw error;
+        } finally {
+            this.db.exec("PRAGMA foreign_keys = ON;");
+        }
+
+        if (this.db.prepare("PRAGMA foreign_key_check").all().length) {
+            throw new Error("Booking database migration failed its foreign-key check.");
+        }
     }
 
     async transaction(callback) {
