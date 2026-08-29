@@ -201,6 +201,58 @@ test("creates a confirmed booking and customer/staff email previews", async (t) 
     );
 });
 
+test("admin bookings support up to 30 guests while public bookings remain capped at eight", async (t) => {
+    const { store, service } = await createFixture();
+    t.after(() => store.close());
+
+    await assert.rejects(
+        service.createBooking(bookingInput({ partySize: 9 })),
+        /Online bookings are available for 1–8 guests/
+    );
+
+    const result = await service.createBooking(bookingInput({ partySize: 30 }), {
+        admin: true,
+        actor: "Test manager"
+    });
+    assert.equal(result.booking.partySize, 30);
+    assert.equal((await service.getManagedBookingById(result.booking.id)).canAmend, false);
+
+    await assert.rejects(
+        service.createBooking(bookingInput({ partySize: 31 }), {
+            admin: true,
+            overrideCapacity: true,
+            actor: "Test manager"
+        }),
+        /Admin bookings are available for 1–30 guests/
+    );
+});
+
+test("SQLite party-size migration preserves existing booking records", async (t) => {
+    const { store, service } = await createFixture();
+    t.after(() => store.close());
+    const existing = await service.createBooking(bookingInput());
+    const emailCount = store.listEmailsForBooking(existing.booking.id).length;
+    const eventCount = store.listBookingEvents(existing.booking.id).length;
+
+    store.migrateAdminPartySizeLimit();
+
+    assert.equal((await store.getBooking(existing.booking.id)).party_size, 4);
+    assert.equal(store.listEmailsForBooking(existing.booking.id).length, emailCount);
+    assert.equal(store.listBookingEvents(existing.booking.id).length, eventCount);
+    assert.equal(store.db.prepare("PRAGMA foreign_key_check").all().length, 0);
+
+    const large = await service.createBooking(bookingInput({
+        time: "18:00",
+        partySize: 30,
+        name: "Large admin party"
+    }), {
+        admin: true,
+        overrideCapacity: true,
+        actor: "Test manager"
+    });
+    assert.equal(large.booking.partySize, 30);
+});
+
 test("failed email delivery does not expire a confirmed website booking", async (t) => {
     let now = new Date("2026-07-28T10:00:00Z");
     const { store, mailer, service } = await createFixture({ now: () => now });

@@ -16,7 +16,10 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
     const connectionString = await database.start();
     t.after(async () => database.stop());
     const applied = await database.applyMigrations(path.join(projectRoot, "netlify/database/migrations"));
-    assert.deepEqual(applied, ["20260826210000_create_booking_system"]);
+    assert.deepEqual(applied, [
+        "20260826210000_create_booking_system",
+        "20260829200000_allow_admin_party_size_30"
+    ]);
 
     const store = new PostgresBookingStore({ connectionString });
     t.after(async () => store.close());
@@ -58,6 +61,17 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
     assert.equal(diary.bookings.length, 1);
     assert.equal(diary.summary.covers, 8);
     assert.equal((await store.listEmailsForBooking(diary.bookings[0].id)).length, 2);
+
+    await service.setMaxOnlineCovers(30, { actor: "Test manager" });
+    const adminBooking = await service.createBooking({
+        ...makeInput("3"),
+        time: "21:00",
+        partySize: 30
+    }, {
+        admin: true,
+        actor: "Test manager"
+    });
+    assert.equal(adminBooking.booking.partySize, 30);
 
     process.env.NETLIFY_DB_URL = connectionString;
     process.env.BOOKING_PUBLIC_URL = "https://example.com";

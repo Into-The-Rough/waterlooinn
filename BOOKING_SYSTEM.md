@@ -136,7 +136,8 @@ Database plan before the booking switch is enabled.
 
 ## Default booking rules
 
-- Parties of 1–8, 30-minute arrival intervals, and a two-hour table duration
+- Public parties of 1–8 and admin-entered parties of 1–30, with 30-minute arrival
+  intervals and a two-hour table duration
 - 30 simultaneous online covers, two hours' notice, and 90 days' advance booking
 - Monday 12:00–20:00; Tuesday closed; Wednesday/Thursday 12:00–20:00;
   Friday/Saturday 12:00–21:00; Sunday 12:00–19:00
