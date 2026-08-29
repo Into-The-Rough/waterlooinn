@@ -25,6 +25,8 @@
     var serviceHoursForm = document.querySelector("[data-service-hours-form]");
     var serviceHoursList = document.querySelector("[data-service-hours-list]");
     var serviceHoursUpdated = document.querySelector("[data-service-hours-updated]");
+    var emailDeliveryHeading = document.querySelector("[data-email-delivery-heading]");
+    var emailDeliveryCopy = document.querySelector("[data-email-delivery-copy]");
     var diary = null;
     var calendar = null;
     var calendarMonth = "";
@@ -187,6 +189,22 @@
     async function loadBookingSettings() {
         var state = await api("/api/admin/booking-settings", { method: "GET" });
         renderBookingSettings(state);
+    }
+
+    async function loadEmailDelivery() {
+        try {
+            var state = await api("/api/health", { method: "GET" });
+            if (state.emailDelivery === "resend") {
+                emailDeliveryHeading.textContent = "Emails are being sent";
+                emailDeliveryCopy.textContent = "Customer and staff booking emails are sent through Resend. Open any booking to review its delivery status and preview the message.";
+                return;
+            }
+            emailDeliveryHeading.textContent = "Local preview outbox";
+            emailDeliveryCopy.textContent = "On this local server, emails are generated safely but not sent. Open any booking to preview its customer and staff messages.";
+        } catch (_error) {
+            emailDeliveryHeading.textContent = "Email delivery status unavailable";
+            emailDeliveryCopy.textContent = "Open any booking to review its email delivery history and preview the message.";
+        }
     }
 
     function statusLabel(status) {
@@ -957,7 +975,7 @@
         var session = await api("/api/admin/session", { method: "GET" });
         var actor = document.querySelector("[data-admin-actor]");
         if (actor) actor.textContent = session.actor;
-        await loadBookingSettings();
+        await Promise.all([loadBookingSettings(), loadEmailDelivery()]);
         syncDate();
     }
 
