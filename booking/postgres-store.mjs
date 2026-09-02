@@ -120,6 +120,14 @@ export class PostgresBookingStore {
         `, [date])).rows;
     }
 
+    async listRecentBookings(limit = 6) {
+        return (await this.query(`
+            SELECT * FROM bookings
+            ORDER BY created_at DESC
+            LIMIT $1
+        `, [limit])).rows;
+    }
+
     async listActiveBookings(date, excludeId = "", nowIso = new Date().toISOString()) {
         return (await this.query(`
             SELECT * FROM bookings

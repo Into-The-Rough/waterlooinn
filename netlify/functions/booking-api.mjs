@@ -300,6 +300,9 @@ async function route(request, url, requestId) {
     if (request.method === "GET" && pathname === "/api/admin/diary") {
         return json(200, await service.listDiary(searchParams.get("date")));
     }
+    if (request.method === "GET" && pathname === "/api/admin/recent-bookings") {
+        return json(200, await service.listRecentBookings(searchParams.get("limit") || 6));
+    }
     if (request.method === "GET" && pathname === "/api/admin/calendar") {
         return json(200, await service.listCalendar(searchParams.get("month")));
     }

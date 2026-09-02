@@ -423,6 +423,10 @@ async function handleApi(request, response, url) {
         return sendJson(response, 200, await service.listDiary(searchParams.get("date")));
     }
 
+    if (request.method === "GET" && pathname === "/api/admin/recent-bookings") {
+        return sendJson(response, 200, await service.listRecentBookings(searchParams.get("limit") || 6));
+    }
+
     if (request.method === "GET" && pathname === "/api/admin/calendar") {
         return sendJson(response, 200, await service.listCalendar(searchParams.get("month")));
     }

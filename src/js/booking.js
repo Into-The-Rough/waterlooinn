@@ -118,12 +118,16 @@
         }
 
         var today = new Date();
-        dateInput.min = isoDate(today);
-        dateInput.max = isoDate(addDays(today, 90));
-        if (!dateInput.value) dateInput.value = /^\d{4}-\d{2}-\d{2}$/.test(requested.get("date") || "")
-            ? requested.get("date")
-            : isoDate(addDays(today, 1));
-        if (/^[1-8]$/.test(requested.get("party") || "")) {
+        var earliestDate = isoDate(addDays(today, 1));
+        var latestDate = isoDate(addDays(today, 90));
+        var requestedDate = requested.get("date") || "";
+        dateInput.min = earliestDate;
+        dateInput.max = latestDate;
+        if (!dateInput.value) dateInput.value = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate) &&
+            requestedDate >= earliestDate && requestedDate <= latestDate
+            ? requestedDate
+            : earliestDate;
+        if (/^[1-7]$/.test(requested.get("party") || "")) {
             partyInput.value = requested.get("party");
         }
 

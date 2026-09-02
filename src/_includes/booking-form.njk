@@ -12,7 +12,8 @@
                 <span class="booking-step-number">1</span>
                 <div>
                     <h3>Choose your table</h3>
-                    <p>Online bookings are available for groups of up to eight.</p>
+                    <p>Online bookings are available for groups of up to seven.</p>
+                    <p class="booking-duration-notice"><strong>2-hour table.</strong> Your table is reserved for a maximum of two hours.</p>
                     <p class="booking-service-summary">
                         <span class="booking-service-summary-label">Food tables only.</span>
                         <span data-booking-service-summary>Checking regular booking days…</span>
@@ -29,7 +30,7 @@
                     <label for="booking-party">Guests</label>
                     <select id="booking-party" name="partySize" required>
                         <option value="">Select</option>
-                        {% for number in [1,2,3,4,5,6,7,8] %}
+                        {% for number in [1,2,3,4,5,6,7] %}
                         <option value="{{ number }}">{{ number }}{% if number == 1 %} guest{% else %} guests{% endif %}</option>
                         {% endfor %}
                     </select>

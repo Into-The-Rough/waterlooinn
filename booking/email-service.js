@@ -188,7 +188,7 @@ class EmailService {
                 : `Thanks ${booking.guest_name}. We look forward to welcoming you to The Waterloo Inn.`,
             content: `${bookingDetails(booking)}
                 <p style="font-size:14px;line-height:1.6;color:#5a665d;">
-                    Your table will be held for ${BOOKING_CONFIG.tableHoldMinutes} minutes after the booked time. If you are running late, please call us on ${escapeHtml(site.phone)}.
+                    Your table is reserved for a maximum of two hours and will be held for ${BOOKING_CONFIG.tableHoldMinutes} minutes after the booked time. If you are running late, please call us on ${escapeHtml(site.phone)}.
                 </p>`,
             action: `<p style="text-align:center;margin:28px 0 0;">${emailButton(manageUrl, awaitingVerification ? "Confirm booking" : "Manage booking")}</p>`
         });

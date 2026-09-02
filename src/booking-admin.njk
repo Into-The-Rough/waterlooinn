@@ -101,6 +101,19 @@ permalink: /admin/bookings/
             </form>
         </section>
 
+        <section class="admin-panel admin-recent-bookings-panel" aria-labelledby="recent-bookings-heading">
+            <div class="admin-panel-heading">
+                <div>
+                    <p class="admin-eyebrow">Booking activity</p>
+                    <h2 id="recent-bookings-heading">Recent bookings</h2>
+                </div>
+                <p class="admin-recent-bookings-note">Updates automatically while this page is open. Tap a booking to open its day.</p>
+            </div>
+            <div class="admin-recent-bookings-list" data-recent-bookings-list>
+                <div class="admin-loading">Loading recent bookings…</div>
+            </div>
+        </section>
+
         <section class="admin-panel admin-calendar-panel" aria-labelledby="calendar-heading">
             <div class="admin-panel-heading admin-calendar-heading">
                 <div>
@@ -117,6 +130,7 @@ permalink: /admin/bookings/
                 <span><i class="calendar-key calendar-key-quiet"></i>Available</span>
                 <span><i class="calendar-key calendar-key-busy"></i>Busy</span>
                 <span><i class="calendar-key calendar-key-full"></i>At capacity</span>
+                <span><i class="calendar-key calendar-key-history"></i>Previous or inactive record</span>
                 <span>Capacity indicates the busiest overlapping two-hour period.</span>
             </div>
             <div class="admin-calendar-scroll">

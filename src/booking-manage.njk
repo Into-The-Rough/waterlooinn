@@ -63,7 +63,7 @@ permalink: /booking/manage/
                                 <div class="form-group">
                                     <label for="manage-party">Guests</label>
                                     <select id="manage-party" name="partySize" required>
-                                        {% for number in [1,2,3,4,5,6,7,8] %}
+                                {% for number in [1,2,3,4,5,6,7] %}
                                         <option value="{{ number }}">{{ number }}</option>
                                         {% endfor %}
                                     </select>

@@ -710,6 +710,81 @@ h2 {
     margin-bottom: 20px;
 }
 
+.admin-recent-bookings-panel {
+    border-top: 4px solid var(--gold);
+    margin-bottom: 20px;
+}
+
+.admin-recent-bookings-note {
+    max-width: 430px;
+    margin: 0;
+    color: var(--muted);
+    font-size: .78rem;
+    text-align: right;
+}
+
+.admin-recent-bookings-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.admin-recent-booking {
+    display: grid;
+    gap: 10px;
+    border: 1px solid var(--line);
+    border-left: 4px solid #619072;
+    border-radius: 3px;
+    background: #fbfaf7;
+    color: var(--ink);
+    cursor: pointer;
+    padding: 13px 14px;
+    text-align: left;
+}
+
+.admin-recent-booking:hover,
+.admin-recent-booking:focus-visible {
+    border-color: var(--gold);
+    box-shadow: 0 5px 15px rgba(15, 35, 24, .1);
+    outline: none;
+}
+
+.admin-recent-booking.is-cancelled,
+.admin-recent-booking.is-expired,
+.admin-recent-booking.is-no_show {
+    border-left-color: #9a8f82;
+}
+
+.admin-recent-booking-main,
+.admin-recent-booking-meta {
+    display: grid;
+    gap: 2px;
+}
+
+.admin-recent-booking-main strong {
+    color: var(--green-darkest);
+    font-size: .92rem;
+}
+
+.admin-recent-booking-main span,
+.admin-recent-booking-meta span {
+    color: var(--muted);
+    font-size: .7rem;
+}
+
+.admin-recent-booking-meta strong {
+    color: #32714a;
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.admin-recent-booking.is-cancelled .admin-recent-booking-meta strong,
+.admin-recent-booking.is-expired .admin-recent-booking-meta strong,
+.admin-recent-booking.is-no_show .admin-recent-booking-meta strong {
+    color: var(--muted);
+}
+
 .admin-calendar-heading {
     margin-bottom: 12px;
 }
@@ -749,6 +824,10 @@ h2 {
 
 .calendar-key-full {
     background: var(--danger);
+}
+
+.calendar-key-history {
+    background: #9a8f82;
 }
 
 .admin-calendar-scroll {
@@ -830,6 +909,11 @@ h2 {
     padding-top: 7px;
 }
 
+.admin-calendar-day.is-history {
+    border-top: 4px solid #9a8f82;
+    padding-top: 7px;
+}
+
 .calendar-day-top {
     display: flex;
     align-items: center;
@@ -861,6 +945,17 @@ h2 {
     font-size: .78rem;
     font-weight: 700;
     margin-top: 10px;
+}
+
+.calendar-day-bookings-history {
+    color: #625c54;
+}
+
+.calendar-day-history {
+    display: block;
+    color: #7d746a;
+    font-size: .63rem;
+    margin-top: 3px;
 }
 
 .calendar-day-covers,
@@ -1491,6 +1586,11 @@ h2 {
         flex-direction: column;
     }
 
+    .admin-recent-bookings-panel .admin-panel-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
     .admin-date-nav {
         width: 100%;
         flex-wrap: wrap;
@@ -1554,6 +1654,16 @@ h2 {
     }
 }
 
+@media (max-width: 900px) {
+    .admin-recent-bookings-list {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-recent-bookings-note {
+        text-align: left;
+    }
+}
+
 @media print {
     @page {
         size: A4 portrait;
@@ -1570,6 +1680,7 @@ h2 {
     .admin-titlebar,
     .admin-alert,
     .admin-calendar-panel,
+    .admin-recent-bookings-panel,
     .admin-attention-panel,
     .admin-diary-tools,
     .admin-sidebar,

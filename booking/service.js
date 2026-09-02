@@ -377,12 +377,24 @@ class BookingService {
         return this.getOnlineBookingState();
     }
 
-    async validateDate(date, { allowPast = false, allowClosedDay = false, serviceHours = null } = {}) {
+    async validateDate(date, {
+        allowPast = false,
+        allowClosedDay = false,
+        allowSameDay = false,
+        serviceHours = null
+    } = {}) {
         if (!isIsoDate(date)) throw validationError("Please choose a valid date.", "date");
         const current = venueNow(this.nowDate());
         const distance = dateDistance(current.date, date);
         if (!allowPast && distance < 0) {
             throw validationError("Please choose a future date.", "date");
+        }
+        if (!allowPast && !allowSameDay && distance < BOOKING_CONFIG.minimumAdvanceDays) {
+            throw validationError(
+                "Online bookings must be made at least one day in advance. For a table today, please call us on 01298 463248.",
+                "date",
+                "SAME_DAY_BOOKING"
+            );
         }
         if (!allowPast && distance > BOOKING_CONFIG.maximumAdvanceDays) {
             throw validationError(`Bookings are available up to ${BOOKING_CONFIG.maximumAdvanceDays} days ahead.`, "date");
@@ -496,6 +508,7 @@ class BookingService {
         const date = await this.validateDate(input.date, {
             allowPast,
             allowClosedDay: admin,
+            allowSameDay: admin,
             serviceHours
         });
         const partySize = this.validatePartySize(input.partySize, { admin });
@@ -967,6 +980,28 @@ class BookingService {
         };
     }
 
+    async listRecentBookings(limitValue = 6) {
+        const limit = Number(limitValue);
+        if (!Number.isInteger(limit) || limit < 1 || limit > 20) {
+            throw validationError("Please choose between 1 and 20 recent bookings.", "limit");
+        }
+        const rows = await this.store.listRecentBookings(limit);
+        return {
+            bookings: rows.map((row) => ({
+                id: row.id,
+                reference: row.reference,
+                date: row.booking_date,
+                time: row.booking_time,
+                timeLabel: formatTime(row.booking_time),
+                partySize: row.party_size,
+                name: row.guest_name,
+                source: row.source,
+                status: row.status,
+                createdAt: row.created_at
+            }))
+        };
+    }
+
     async listCalendar(month) {
         if (!/^\d{4}-\d{2}$/.test(String(month || ""))) {
             throw validationError("Please choose a valid month.", "month");
@@ -1013,12 +1048,17 @@ class BookingService {
                 isRegularServiceDay: Boolean(serviceRule),
                 wholeDayClosed: blocks.some((block) => block.booking_time === "*"),
                 blockedSlotCount: blocks.filter((block) => block.booking_time !== "*").length,
+                recordCount: rows.length,
                 bookingCount: activeRows.length,
+                inactiveCount: rows.length - activeRows.length,
                 totalCovers: activeRows.reduce((total, booking) => total + booking.party_size, 0),
                 peakCovers,
                 peakRemaining: Math.max(0, maxOnlineCovers - peakCovers),
                 capacityPercent: Math.min(100, Math.round((peakCovers / maxOnlineCovers) * 100)),
                 cancellationCount: rows.filter((booking) => booking.status === "cancelled").length,
+                expiredCount: rows.filter((booking) => booking.status === "expired").length,
+                completedCount: rows.filter((booking) => booking.status === "completed").length,
+                noShowCount: rows.filter((booking) => booking.status === "no_show").length,
                 waitlistCount: (await this.store.listWaitlist(date))
                     .filter((entry) => entry.status === "waiting").length
             });
@@ -1419,7 +1459,11 @@ class BookingService {
     }
 
     async createBlock(input, audit = {}) {
-        const date = await this.validateDate(input.date, { allowPast: false, allowClosedDay: true });
+        const date = await this.validateDate(input.date, {
+            allowPast: false,
+            allowClosedDay: true,
+            allowSameDay: true
+        });
         const time = input.time === "*" ? "*" : cleanText(input.time, 5);
         if (time !== "*" && !(await this.generateSlots(date)).includes(time)) {
             throw validationError("Please choose a valid time to close.", "time");
