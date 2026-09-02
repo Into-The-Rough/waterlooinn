@@ -369,12 +369,13 @@ class BookingStore {
         `).all(date);
     }
 
-    listRecentBookings(limit = 6) {
+    listRecentBookings(earliestDate, limit = 6) {
         return this.db.prepare(`
             SELECT * FROM bookings
+            WHERE booking_date >= ?
             ORDER BY created_at DESC
             LIMIT ?
-        `).all(limit);
+        `).all(earliestDate, limit);
     }
 
     listActiveBookings(date, excludeId = "", nowIso = new Date().toISOString()) {
