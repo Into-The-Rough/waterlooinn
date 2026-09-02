@@ -136,9 +136,14 @@ Database plan before the booking switch is enabled.
 
 ## Default booking rules
 
-- Public parties of 1–8 and admin-entered parties of 1–30, with 30-minute arrival
+- Public parties of 1–7 and admin-entered parties of 1–30, with 30-minute arrival
   intervals and a two-hour table duration
-- 30 simultaneous online covers, two hours' notice, and 90 days' advance booking
+- 30 simultaneous online covers, no same-day online booking, and 90 days' advance booking
 - Monday 12:00–20:00; Tuesday closed; Wednesday/Thursday 12:00–20:00;
   Friday/Saturday 12:00–21:00; Sunday 12:00–19:00
 - Restaurant by default, with bar/outside allocation available to admins
+
+The admin diary also shows the six most recently created bookings and checks for
+new activity every minute while the page is open. Its monthly calendar counts all
+stored booking records; cancelled, completed, no-show and expired records are
+shown as history rather than being labelled “No bookings”.

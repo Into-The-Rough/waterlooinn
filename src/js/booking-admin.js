@@ -27,10 +27,13 @@
     var serviceHoursUpdated = document.querySelector("[data-service-hours-updated]");
     var emailDeliveryHeading = document.querySelector("[data-email-delivery-heading]");
     var emailDeliveryCopy = document.querySelector("[data-email-delivery-copy]");
+    var recentBookingsList = document.querySelector("[data-recent-bookings-list]");
     var diary = null;
     var calendar = null;
     var calendarMonth = "";
     var attentionFilter = "";
+    var recentBookingIds = new Set();
+    var recentBookingsLoaded = false;
     var adminRequestId = window.crypto && window.crypto.randomUUID
         ? window.crypto.randomUUID()
         : String(Date.now()) + "-admin-" + Math.random().toString(36).slice(2);
@@ -703,6 +706,75 @@
         }
     }
 
+    function recentBookingStatus(status) {
+        return {
+            pending: "Awaiting email",
+            confirmed: "Confirmed",
+            arrived: "Arrived",
+            seated: "Seated",
+            completed: "Completed",
+            cancelled: "Cancelled",
+            no_show: "No-show",
+            expired: "Expired"
+        }[status] || status;
+    }
+
+    function renderRecentBookings(bookings) {
+        if (!bookings.length) {
+            recentBookingsList.innerHTML = '<div class="admin-empty">No booking activity yet.</div>';
+            return;
+        }
+        recentBookingsList.innerHTML = bookings.map(function (booking) {
+            var source = {
+                web: "Online booking",
+                phone: "Telephone booking",
+                walk_in: "Walk-in booking",
+                admin: "Admin booking"
+            }[booking.source] || "Admin booking";
+            return '<button type="button" class="admin-recent-booking is-' + escapeHtml(booking.status) + '" data-recent-booking-date="' + escapeHtml(booking.date) + '">' +
+                '<span class="admin-recent-booking-main"><strong>' + escapeHtml(booking.name) + '</strong>' +
+                '<span>' + Number(booking.partySize) + (Number(booking.partySize) === 1 ? " guest" : " guests") + ' · ' + escapeHtml(formatShortDate(booking.date)) + ' at ' + escapeHtml(booking.timeLabel) + '</span></span>' +
+                '<span class="admin-recent-booking-meta"><strong>' + escapeHtml(recentBookingStatus(booking.status)) + '</strong>' +
+                '<span>' + escapeHtml(source) + ' · ' + escapeHtml(booking.reference) + '</span></span>' +
+            '</button>';
+        }).join("");
+        recentBookingsList.querySelectorAll("[data-recent-booking-date]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                dateInput.value = button.dataset.recentBookingDate;
+                syncDate();
+                document.querySelector(".admin-stats").scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+        });
+    }
+
+    async function loadRecentBookings(announceNew) {
+        try {
+            var result = await api("/api/admin/recent-bookings?limit=6", { method: "GET" });
+            var bookings = result.bookings || [];
+            var newBookings = recentBookingsLoaded
+                ? bookings.filter(function (booking) { return !recentBookingIds.has(booking.id); })
+                : [];
+            recentBookingIds = new Set(bookings.map(function (booking) { return booking.id; }));
+            recentBookingsLoaded = true;
+            renderRecentBookings(bookings);
+            if (announceNew && newBookings.length) {
+                var newest = newBookings[0];
+                showAlert("New booking: " + newest.name + " · " + newest.partySize +
+                    (Number(newest.partySize) === 1 ? " guest · " : " guests · ") +
+                    formatShortDate(newest.date) + " at " + newest.timeLabel + ".", true);
+                await loadCalendar();
+                if (newBookings.some(function (booking) { return booking.date === dateInput.value; })) {
+                    await loadDiary();
+                }
+            }
+        } catch (error) {
+            if (!recentBookingsLoaded) {
+                recentBookingsList.innerHTML = '<div class="admin-empty">Recent booking activity could not be loaded.</div>';
+                showAlert(error.message, false);
+            }
+        }
+    }
+
     function renderCalendar() {
         document.querySelector("[data-calendar-heading]").textContent = calendar.monthLabel;
         var today = isoDate(new Date());
@@ -717,16 +789,26 @@
             if (!day.isRegularServiceDay || day.wholeDayClosed) classes.push("is-closed");
             if (day.capacityPercent >= 100) classes.push("is-full");
             else if (day.capacityPercent >= 60) classes.push("is-busy");
+            if (day.recordCount && !day.bookingCount) classes.push("is-history");
 
             var closure = day.wholeDayClosed
                 ? "Online closed"
                 : (!day.isRegularServiceDay ? "No service" : (day.blockedSlotCount ? day.blockedSlotCount + " slot closed" : ""));
+            var historyParts = [];
+            if (day.expiredCount) historyParts.push(day.expiredCount + " expired");
+            if (day.cancellationCount) historyParts.push(day.cancellationCount + " cancelled");
+            if (day.completedCount) historyParts.push(day.completedCount + " completed");
+            if (day.noShowCount) historyParts.push(day.noShowCount + " no-show");
             var bookingSummary = day.bookingCount
                 ? '<span class="calendar-day-bookings">' + day.bookingCount + (day.bookingCount === 1 ? " booking" : " bookings") + '</span>' +
                   '<span class="calendar-day-covers">' + day.totalCovers + (day.totalCovers === 1 ? " cover" : " covers") + '</span>' +
                   '<div class="calendar-day-capacity"><span style="width:' + day.capacityPercent + '%"></span></div>' +
-                  '<span class="calendar-day-capacity-label">Peak ' + day.peakCovers + "/" + calendar.maxCovers + "</span>"
-                : '<span class="calendar-day-empty">No bookings</span>';
+                  '<span class="calendar-day-capacity-label">Peak ' + day.peakCovers + "/" + calendar.maxCovers + "</span>" +
+                  (day.inactiveCount ? '<span class="calendar-day-history">+ ' + day.inactiveCount + ' previous</span>' : "")
+                : day.recordCount
+                    ? '<span class="calendar-day-bookings calendar-day-bookings-history">' + day.recordCount + (day.recordCount === 1 ? " booking record" : " booking records") + '</span>' +
+                      '<span class="calendar-day-history">' + escapeHtml(historyParts.join(" · ") || day.inactiveCount + " inactive") + '</span>'
+                    : '<span class="calendar-day-empty">No bookings</span>';
             if (day.waitlistCount) {
                 bookingSummary += '<span class="calendar-day-waitlist">' + day.waitlistCount + " waiting</span>";
             }
@@ -774,7 +856,7 @@
     }
 
     async function refreshAll() {
-        await Promise.all([loadDiary(), loadCalendar()]);
+        await Promise.all([loadDiary(), loadCalendar(), loadRecentBookings(false)]);
     }
 
     function syncDate() {
@@ -976,8 +1058,11 @@
         var session = await api("/api/admin/session", { method: "GET" });
         var actor = document.querySelector("[data-admin-actor]");
         if (actor) actor.textContent = session.actor;
-        await Promise.all([loadBookingSettings(), loadEmailDelivery()]);
+        await Promise.all([loadBookingSettings(), loadEmailDelivery(), loadRecentBookings(false)]);
         syncDate();
+        window.setInterval(function () {
+            if (!document.hidden) loadRecentBookings(true);
+        }, 60000);
     }
 
     var logout = document.querySelector("[data-admin-logout]");

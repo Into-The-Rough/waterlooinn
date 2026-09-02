@@ -1417,6 +1417,17 @@ legend.booking-step-heading + * {
     margin-top: 9px;
 }
 
+.booking-step-heading .booking-duration-notice {
+    border-left: 3px solid var(--gold);
+    color: var(--text-light);
+    margin-top: 12px;
+    padding: 7px 10px;
+}
+
+.booking-duration-notice strong {
+    color: var(--gold-light);
+}
+
 .booking-service-summary-label {
     color: var(--gold);
     font-weight: 700;

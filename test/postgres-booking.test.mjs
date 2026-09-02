@@ -37,13 +37,13 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
     assert.equal(initialState.serviceHours.length, 7);
     assert.equal(initialState.serviceHours.find((day) => day.weekday === 2).enabled, false);
     assert.equal(initialState.serviceHoursUpdatedAt, null);
-    await service.setMaxOnlineCovers(8, { actor: "Test manager" });
+    await service.setMaxOnlineCovers(7, { actor: "Test manager" });
     await service.setOnlineBookingsEnabled(true, { actor: "Test manager" });
 
     const makeInput = (suffix) => ({
         date: "2026-09-02",
         time: "18:00",
-        partySize: 8,
+        partySize: 7,
         name: `Test Guest ${suffix}`,
         email: `guest${suffix}@example.com`,
         phone: `0712345678${suffix}`
@@ -59,7 +59,7 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
 
     const diary = await service.listDiary("2026-09-02");
     assert.equal(diary.bookings.length, 1);
-    assert.equal(diary.summary.covers, 8);
+    assert.equal(diary.summary.covers, 7);
     assert.equal((await store.listEmailsForBooking(diary.bookings[0].id)).length, 2);
 
     await service.setMaxOnlineCovers(30, { actor: "Test manager" });

@@ -89,6 +89,28 @@ test("publishes the configured Wednesday availability", async (t) => {
     );
 });
 
+test("public bookings start tomorrow while admins can record a same-day booking", async (t) => {
+    const { store, service } = await createFixture();
+    t.after(() => store.close());
+
+    await assert.rejects(
+        service.getPublicAvailability("2026-07-28", 2),
+        (error) => error.code === "SAME_DAY_BOOKING" && /at least one day in advance/.test(error.message)
+    );
+    await assert.rejects(
+        service.createBooking(bookingInput({ date: "2026-07-28" })),
+        (error) => error.code === "SAME_DAY_BOOKING"
+    );
+
+    const adminBooking = await service.createBooking(bookingInput({
+        date: "2026-07-28",
+        partySize: 12,
+        name: "Same-day telephone booking"
+    }), { admin: true, actor: "Test manager" });
+    assert.equal(adminBooking.booking.date, "2026-07-28");
+    assert.equal(adminBooking.booking.partySize, 12);
+});
+
 test("weekly food booking days and times are editable without removing existing bookings", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());
@@ -199,15 +221,17 @@ test("creates a confirmed booking and customer/staff email previews", async (t) 
         new Set(emails.map((email) => email.kind)),
         new Set(["customer_confirmation", "staff_notification"])
     );
+    const customerEmail = store.getEmail(emails.find((email) => email.kind === "customer_confirmation").id);
+    assert.match(customerEmail.html, /reserved for a maximum of two hours/);
 });
 
-test("admin bookings support up to 30 guests while public bookings remain capped at eight", async (t) => {
+test("admin bookings support up to 30 guests while public bookings remain capped at seven", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());
 
     await assert.rejects(
-        service.createBooking(bookingInput({ partySize: 9 })),
-        /Online bookings are available for 1–8 guests/
+        service.createBooking(bookingInput({ partySize: 8 })),
+        /Online bookings are available for 1–7 guests/
     );
 
     const result = await service.createBooking(bookingInput({ partySize: 30 }), {
@@ -277,27 +301,28 @@ test("failed email delivery does not expire a confirmed website booking", async 
 test("enforces overlapping cover capacity", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());
+    await service.setMaxOnlineCovers(28, { actor: "Test manager" });
 
     await service.createBooking(bookingInput({
-        partySize: 8,
+        partySize: 7,
         name: "First Party",
         email: "first@example.com"
     }));
     await service.createBooking(bookingInput({
         time: "12:30",
-        partySize: 8,
+        partySize: 7,
         name: "Second Party",
         email: "second@example.com"
     }));
     await service.createBooking(bookingInput({
         time: "13:00",
-        partySize: 8,
+        partySize: 7,
         name: "Third Party",
         email: "third@example.com"
     }));
     await service.createBooking(bookingInput({
         time: "13:30",
-        partySize: 6,
+        partySize: 7,
         name: "Fourth Party",
         email: "fourth@example.com"
     }));
@@ -312,13 +337,13 @@ test("cancellation token cancels once and releases capacity", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());
 
-    const result = await service.createBooking(bookingInput({ partySize: 8 }));
+    const result = await service.createBooking(bookingInput({ partySize: 7 }));
     const token = manageTokenFor(store, result.booking.id);
 
     assert.equal((await service.getManagedBooking(token)).canCancel, true);
     const cancelled = await service.cancelBooking(token);
     assert.equal(cancelled.booking.status, "cancelled");
-    assert.equal((await service.getAvailability("2026-07-29", 8)).slots[0].available, true);
+    assert.equal((await service.getAvailability("2026-07-29", 7)).slots[0].available, true);
     await assert.rejects(service.getManagedBooking(token), /invalid or has expired/);
 });
 
@@ -474,24 +499,25 @@ test("reminders rotate manage tokens and stored previews redact the bearer", asy
 test("a cancellation offers released capacity to the earliest waiting guest", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());
+    await service.setMaxOnlineCovers(28, { actor: "Test manager" });
 
     const first = await service.createBooking(bookingInput({
-        partySize: 8,
+        partySize: 7,
         name: "First Full Table",
         email: "first-full@example.com"
     }));
     await service.createBooking(bookingInput({
-        partySize: 8,
+        partySize: 7,
         name: "Second Full Table",
         email: "second-full@example.com"
     }));
     await service.createBooking(bookingInput({
-        partySize: 8,
+        partySize: 7,
         name: "Third Full Table",
         email: "third-full@example.com"
     }));
     await service.createBooking(bookingInput({
-        partySize: 6,
+        partySize: 7,
         name: "Fourth Full Table",
         email: "fourth-full@example.com"
     }));
@@ -644,16 +670,43 @@ test("expired verification holds disappear from admin capacity summaries", async
     assert.equal(diary.bookings[0].status, "expired");
     assert.equal(diary.summary.bookingCount, 0);
     assert.equal(diary.summary.covers, 0);
+    const calendarDay = (await service.listCalendar("2026-07")).days.find((day) => day.date === "2026-07-29");
+    assert.equal(calendarDay.recordCount, 1);
+    assert.equal(calendarDay.bookingCount, 0);
+    assert.equal(calendarDay.inactiveCount, 1);
+    assert.equal(calendarDay.expiredCount, 1);
     await assert.rejects(service.exchangeManageToken(token), /invalid or has expired/);
+});
+
+test("recent booking activity returns the newest records first", async (t) => {
+    let now = new Date("2026-07-28T10:00:00Z");
+    const { store, service } = await createFixture({ now: () => now });
+    t.after(() => store.close());
+
+    const first = await service.createBooking(bookingInput({ email: "first@example.com" }));
+    now = new Date("2026-07-28T10:01:00Z");
+    const second = await service.createBooking(bookingInput({
+        time: "15:00",
+        name: "Newest Guest",
+        email: "newest@example.com"
+    }));
+
+    const result = await service.listRecentBookings(1);
+    assert.equal(result.bookings.length, 1);
+    assert.equal(result.bookings[0].id, second.booking.id);
+    assert.equal(result.bookings[0].name, "Newest Guest");
+    assert.notEqual(result.bookings[0].id, first.booking.id);
+    await assert.rejects(service.listRecentBookings(21), /between 1 and 20/);
 });
 
 test("waiting-list creation is idempotent", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());
-    await service.createBooking(bookingInput({ partySize: 8, email: "one@example.com" }));
-    await service.createBooking(bookingInput({ partySize: 8, email: "two@example.com" }));
-    await service.createBooking(bookingInput({ partySize: 8, email: "three@example.com" }));
-    await service.createBooking(bookingInput({ partySize: 6, email: "four@example.com" }));
+    await service.setMaxOnlineCovers(28, { actor: "Test manager" });
+    await service.createBooking(bookingInput({ partySize: 7, email: "one@example.com" }));
+    await service.createBooking(bookingInput({ partySize: 7, email: "two@example.com" }));
+    await service.createBooking(bookingInput({ partySize: 7, email: "three@example.com" }));
+    await service.createBooking(bookingInput({ partySize: 7, email: "four@example.com" }));
     const input = {
         date: "2026-07-29",
         time: "12:00",

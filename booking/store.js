@@ -369,6 +369,14 @@ class BookingStore {
         `).all(date);
     }
 
+    listRecentBookings(limit = 6) {
+        return this.db.prepare(`
+            SELECT * FROM bookings
+            ORDER BY created_at DESC
+            LIMIT ?
+        `).all(limit);
+    }
+
     listActiveBookings(date, excludeId = "", nowIso = new Date().toISOString()) {
         return this.db.prepare(`
             SELECT * FROM bookings
