@@ -985,7 +985,8 @@ class BookingService {
         if (!Number.isInteger(limit) || limit < 1 || limit > 20) {
             throw validationError("Please choose between 1 and 20 recent bookings.", "limit");
         }
-        const rows = await this.store.listRecentBookings(limit);
+        const today = venueNow(this.nowDate()).date;
+        const rows = await this.store.listRecentBookings(today, limit);
         return {
             bookings: rows.map((row) => ({
                 id: row.id,

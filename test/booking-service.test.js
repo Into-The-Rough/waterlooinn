@@ -699,6 +699,27 @@ test("recent booking activity returns the newest records first", async (t) => {
     await assert.rejects(service.listRecentBookings(21), /between 1 and 20/);
 });
 
+test("recent booking activity excludes visits before today", async (t) => {
+    let now = new Date("2026-07-28T10:00:00Z");
+    const { store, service } = await createFixture({ now: () => now });
+    t.after(() => store.close());
+
+    const oldVisit = await service.createBooking(bookingInput({
+        name: "Yesterday's Guest",
+        email: "yesterday@example.com"
+    }));
+    now = new Date("2026-07-30T10:00:00Z");
+    const upcomingVisit = await service.createBooking(bookingInput({
+        date: "2026-07-31",
+        name: "Upcoming Guest",
+        email: "upcoming@example.com"
+    }));
+
+    const result = await service.listRecentBookings(6);
+    assert.deepEqual(result.bookings.map((booking) => booking.id), [upcomingVisit.booking.id]);
+    assert.notEqual(result.bookings[0].id, oldVisit.booking.id);
+});
+
 test("waiting-list creation is idempotent", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());

@@ -143,7 +143,8 @@ Database plan before the booking switch is enabled.
   Friday/Saturday 12:00–21:00; Sunday 12:00–19:00
 - Restaurant by default, with bar/outside allocation available to admins
 
-The admin diary also shows the six most recently created bookings and checks for
-new activity every minute while the page is open. Its monthly calendar counts all
-stored booking records; cancelled, completed, no-show and expired records are
-shown as history rather than being labelled “No bookings”.
+The admin diary also shows the six most recently created bookings whose visit date
+is today or later, and checks for new activity every minute while the page is open.
+Its monthly calendar counts all stored booking records; cancelled, completed,
+no-show and expired records are shown as history rather than being labelled “No
+bookings”.
