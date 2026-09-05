@@ -65,9 +65,16 @@ permalink: /admin/bookings/
             </div>
             <div class="admin-master-controls">
                 <form class="admin-capacity-control" data-capacity-form>
-                    <label for="admin-max-covers">Peak cover capacity</label>
+                    <label for="admin-max-covers">Overall peak covers</label>
                     <div>
                         <input type="number" id="admin-max-covers" name="maxCovers" min="1" max="500" step="1" required disabled>
+                        <button type="submit" class="admin-button admin-button-secondary" disabled>Save</button>
+                    </div>
+                </form>
+                <form class="admin-capacity-control" data-arrival-capacity-form>
+                    <label for="admin-max-arrival-covers">Covers per half hour</label>
+                    <div>
+                        <input type="number" id="admin-max-arrival-covers" name="maxArrivalCovers" min="1" max="500" step="1" required disabled>
                         <button type="submit" class="admin-button admin-button-secondary" disabled>Save</button>
                     </div>
                 </form>

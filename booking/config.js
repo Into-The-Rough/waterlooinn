@@ -8,6 +8,7 @@ const BOOKING_CONFIG = Object.freeze({
     maxPartySize: 7,
     maxAdminPartySize: 30,
     maxOnlineCovers: 30,
+    maxOnlineArrivalCovers: 10,
     minimumNoticeMinutes: 120,
     minimumAdvanceDays: 1,
     maximumAdvanceDays: 90,

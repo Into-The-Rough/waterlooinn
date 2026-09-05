@@ -32,6 +32,7 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
     const initialState = await service.getOnlineBookingState();
     assert.equal(initialState.enabled, false);
     assert.equal(initialState.maxCovers, 30);
+    assert.equal(initialState.maxArrivalCovers, 10);
     assert.equal(initialState.updatedAt, null);
     assert.equal(initialState.updatedBy, null);
     assert.equal(initialState.serviceHours.length, 7);
@@ -69,6 +70,7 @@ test("Netlify Postgres migration persists defaults and enforces capacity", async
         partySize: 30
     }, {
         admin: true,
+        overrideCapacity: true,
         actor: "Test manager"
     });
     assert.equal(adminBooking.booking.partySize, 30);

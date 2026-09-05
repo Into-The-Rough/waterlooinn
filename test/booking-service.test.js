@@ -104,11 +104,11 @@ test("public bookings start tomorrow while admins can record a same-day booking"
 
     const adminBooking = await service.createBooking(bookingInput({
         date: "2026-07-28",
-        partySize: 12,
+        partySize: 7,
         name: "Same-day telephone booking"
     }), { admin: true, actor: "Test manager" });
     assert.equal(adminBooking.booking.date, "2026-07-28");
-    assert.equal(adminBooking.booking.partySize, 12);
+    assert.equal(adminBooking.booking.partySize, 7);
 });
 
 test("weekly food booking days and times are editable without removing existing bookings", async (t) => {
@@ -165,6 +165,7 @@ test("global master switch blocks new public bookings but leaves admin booking a
 
     assert.equal((await service.getOnlineBookingState()).enabled, true);
     assert.equal((await service.getOnlineBookingState()).maxCovers, 30);
+    assert.equal((await service.getOnlineBookingState()).maxArrivalCovers, 10);
     const disabled = await service.setOnlineBookingsEnabled(false, {
         actor: "Test Manager",
         requestId: "request-1"
@@ -198,11 +199,28 @@ test("peak cover capacity is editable and used by availability and diary summari
 
     const state = await service.setMaxOnlineCovers(36, { actor: "Test Manager" });
     assert.equal(state.maxCovers, 36);
-    assert.equal((await service.getAvailability("2026-07-29", 2)).slots[0].remainingCovers, 36);
+    const firstSlot = (await service.getAvailability("2026-07-29", 2)).slots[0];
+    assert.equal(firstSlot.remainingPeakCovers, 36);
+    assert.equal(firstSlot.remainingArrivalCovers, 10);
+    assert.equal(firstSlot.remainingCovers, 10);
     assert.equal((await service.listDiary("2026-07-29")).config.maxOnlineCovers, 36);
     assert.equal((await service.listCalendar("2026-07")).maxCovers, 36);
     await assert.rejects(service.setMaxOnlineCovers(0), /between 1 and 500/);
     await assert.rejects(service.setMaxOnlineCovers(12.5), /whole number/);
+});
+
+test("half-hour arrival capacity defaults to 10 and is editable", async (t) => {
+    const { store, service } = await createFixture();
+    t.after(() => store.close());
+
+    assert.equal((await service.getOnlineBookingState()).maxArrivalCovers, 10);
+    const state = await service.setMaxOnlineArrivalCovers(12, { actor: "Test Manager" });
+    assert.equal(state.maxArrivalCovers, 12);
+    const firstSlot = (await service.getAvailability("2026-07-29", 2)).slots[0];
+    assert.equal(firstSlot.remainingArrivalCovers, 12);
+    assert.equal((await service.listDiary("2026-07-29")).config.maxOnlineArrivalCovers, 12);
+    await assert.rejects(service.setMaxOnlineArrivalCovers(0), /between 1 and 500/);
+    await assert.rejects(service.setMaxOnlineArrivalCovers(12.5), /whole number/);
 });
 
 test("creates a confirmed booking and customer/staff email previews", async (t) => {
@@ -236,6 +254,7 @@ test("admin bookings support up to 30 guests while public bookings remain capped
 
     const result = await service.createBooking(bookingInput({ partySize: 30 }), {
         admin: true,
+        overrideCapacity: true,
         actor: "Test manager"
     });
     assert.equal(result.booking.partySize, 30);
@@ -331,6 +350,59 @@ test("enforces overlapping cover capacity", async (t) => {
     const oneThirty = availability.slots.find((slot) => slot.time === "13:30");
     assert.equal(oneThirty.available, false);
     assert.equal(oneThirty.remainingCovers, 0);
+});
+
+test("limits arrivals to 10 covers in each exact half-hour slot", async (t) => {
+    const { store, service } = await createFixture();
+    t.after(() => store.close());
+
+    await service.createBooking(bookingInput({
+        partySize: 7,
+        name: "First Arrival",
+        email: "first-arrival@example.com"
+    }));
+    const afterSeven = await service.getAvailability("2026-07-29", 3);
+    assert.equal(afterSeven.slots.find((slot) => slot.time === "12:00").available, true);
+    assert.equal(afterSeven.slots.find((slot) => slot.time === "12:00").remainingArrivalCovers, 3);
+    assert.equal(afterSeven.slots.find((slot) => slot.time === "12:30").remainingArrivalCovers, 10);
+
+    await assert.rejects(
+        service.createBooking(bookingInput({
+            partySize: 4,
+            name: "Too Many Arrivals",
+            email: "too-many@example.com"
+        })),
+        (error) => error.code === "SLOT_UNAVAILABLE"
+    );
+    await service.createBooking(bookingInput({
+        partySize: 3,
+        name: "Final Arrival",
+        email: "final-arrival@example.com"
+    }));
+    const fullSlot = (await service.getAvailability("2026-07-29", 1)).slots
+        .find((slot) => slot.time === "12:00");
+    assert.equal(fullSlot.available, false);
+    assert.equal(fullSlot.remainingArrivalCovers, 0);
+    assert.equal(fullSlot.remainingPeakCovers, 20);
+
+    await assert.rejects(
+        service.createBooking(bookingInput({
+            partySize: 1,
+            name: "Telephone Arrival",
+            email: "",
+            phone: "",
+            source: "phone"
+        }), { admin: true, actor: "Test manager" }),
+        (error) => error.code === "ARRIVAL_CAPACITY_EXCEEDED"
+    );
+    const overridden = await service.createBooking(bookingInput({
+        partySize: 1,
+        name: "Approved Telephone Arrival",
+        email: "",
+        phone: "",
+        source: "phone"
+    }), { admin: true, overrideCapacity: true, actor: "Test manager" });
+    assert.equal(overridden.booking.status, "confirmed");
 });
 
 test("cancellation token cancels once and releases capacity", async (t) => {
@@ -500,6 +572,7 @@ test("a cancellation offers released capacity to the earliest waiting guest", as
     const { store, service } = await createFixture();
     t.after(() => store.close());
     await service.setMaxOnlineCovers(28, { actor: "Test manager" });
+    await service.setMaxOnlineArrivalCovers(28, { actor: "Test manager" });
 
     const first = await service.createBooking(bookingInput({
         partySize: 7,
@@ -724,6 +797,7 @@ test("waiting-list creation is idempotent", async (t) => {
     const { store, service } = await createFixture();
     t.after(() => store.close());
     await service.setMaxOnlineCovers(28, { actor: "Test manager" });
+    await service.setMaxOnlineArrivalCovers(28, { actor: "Test manager" });
     await service.createBooking(bookingInput({ partySize: 7, email: "one@example.com" }));
     await service.createBooking(bookingInput({ partySize: 7, email: "two@example.com" }));
     await service.createBooking(bookingInput({ partySize: 7, email: "three@example.com" }));

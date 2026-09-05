@@ -439,8 +439,9 @@ async function handleApi(request, response, url) {
         const input = await readJson(request);
         const hasEnabled = Object.hasOwn(input, "enabled");
         const hasMaxCovers = Object.hasOwn(input, "maxCovers");
+        const hasMaxArrivalCovers = Object.hasOwn(input, "maxArrivalCovers");
         const hasServiceHours = Object.hasOwn(input, "serviceHours");
-        if (!hasEnabled && !hasMaxCovers && !hasServiceHours) {
+        if (!hasEnabled && !hasMaxCovers && !hasMaxArrivalCovers && !hasServiceHours) {
             throw Object.assign(new Error("No booking setting was provided."), {
                 status: 400,
                 code: "VALIDATION_ERROR"
@@ -448,6 +449,9 @@ async function handleApi(request, response, url) {
         }
         if (hasEnabled) await service.setOnlineBookingsEnabled(input.enabled, audit());
         if (hasMaxCovers) await service.setMaxOnlineCovers(input.maxCovers, audit());
+        if (hasMaxArrivalCovers) {
+            await service.setMaxOnlineArrivalCovers(input.maxArrivalCovers, audit());
+        }
         if (hasServiceHours) await service.setServiceHours(input.serviceHours, audit());
         return sendJson(response, 200, await service.getOnlineBookingState());
     }

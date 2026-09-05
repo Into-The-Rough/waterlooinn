@@ -21,6 +21,9 @@
     var capacityForm = document.querySelector("[data-capacity-form]");
     var capacityInput = capacityForm.elements.maxCovers;
     var capacitySubmit = capacityForm.querySelector('button[type="submit"]');
+    var arrivalCapacityForm = document.querySelector("[data-arrival-capacity-form]");
+    var arrivalCapacityInput = arrivalCapacityForm.elements.maxArrivalCovers;
+    var arrivalCapacitySubmit = arrivalCapacityForm.querySelector('button[type="submit"]');
     var capacityOverrideLabel = document.querySelector("[data-capacity-override-label]");
     var serviceHoursForm = document.querySelector("[data-service-hours-form]");
     var serviceHoursList = document.querySelector("[data-service-hours-list]");
@@ -181,7 +184,11 @@
         capacityInput.value = state.maxCovers;
         capacityInput.disabled = false;
         capacitySubmit.disabled = false;
-        capacityOverrideLabel.textContent = "Override the " + state.maxCovers + "-cover limit";
+        arrivalCapacityInput.value = state.maxArrivalCovers;
+        arrivalCapacityInput.disabled = false;
+        arrivalCapacitySubmit.disabled = false;
+        capacityOverrideLabel.textContent = "Override the " + state.maxCovers + "-cover peak and " +
+            state.maxArrivalCovers + "-cover half-hour limits";
         if (Array.isArray(state.serviceHours)) renderServiceHours(state.serviceHours);
         serviceHoursUpdated.textContent = state.serviceHoursUpdatedAt
             ? "Last changed " + formatDateTime(state.serviceHoursUpdatedAt) +
@@ -955,6 +962,25 @@
         } catch (error) {
             capacityInput.disabled = false;
             capacitySubmit.disabled = false;
+            showAlert(error.message, false);
+        }
+    });
+
+    arrivalCapacityForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        arrivalCapacityInput.disabled = true;
+        arrivalCapacitySubmit.disabled = true;
+        try {
+            var state = await api("/api/admin/booking-settings", {
+                method: "PATCH",
+                body: JSON.stringify({ maxArrivalCovers: Number(arrivalCapacityInput.value) })
+            });
+            renderBookingSettings(state);
+            showAlert("Half-hour arrival capacity is now " + state.maxArrivalCovers + ".", true);
+            await refreshAll();
+        } catch (error) {
+            arrivalCapacityInput.disabled = false;
+            arrivalCapacitySubmit.disabled = false;
             showAlert(error.message, false);
         }
     });
