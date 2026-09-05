@@ -291,10 +291,11 @@ class BookingService {
     }
 
     async getOnlineBookingState() {
-        const [enabled, maxCovers, updatedAt, updatedBy, serviceHours,
+        const [enabled, maxCovers, maxArrivalCovers, updatedAt, updatedBy, serviceHours,
             serviceHoursUpdatedAt, serviceHoursUpdatedBy] = await Promise.all([
             this.store.getAppMeta("online_bookings_enabled", "false"),
             this.getMaxOnlineCovers(),
+            this.getMaxOnlineArrivalCovers(),
             this.store.getAppMeta("online_bookings_updated_at"),
             this.store.getAppMeta("online_bookings_updated_by"),
             this.getServiceHours(),
@@ -304,6 +305,7 @@ class BookingService {
         return {
             enabled: enabled === "true",
             maxCovers,
+            maxArrivalCovers,
             updatedAt: updatedAt || null,
             updatedBy: updatedBy || null,
             serviceHours,
@@ -317,6 +319,16 @@ class BookingService {
         return Number.isInteger(stored) && stored >= 1 && stored <= 500
             ? stored
             : BOOKING_CONFIG.maxOnlineCovers;
+    }
+
+    async getMaxOnlineArrivalCovers() {
+        const stored = Number(await this.store.getAppMeta(
+            "max_online_arrival_covers",
+            BOOKING_CONFIG.maxOnlineArrivalCovers
+        ));
+        return Number.isInteger(stored) && stored >= 1 && stored <= 500
+            ? stored
+            : BOOKING_CONFIG.maxOnlineArrivalCovers;
     }
 
     async requireOnlineBookingsEnabled() {
@@ -377,6 +389,35 @@ class BookingService {
         return this.getOnlineBookingState();
     }
 
+    async setMaxOnlineArrivalCovers(value, audit = {}) {
+        const maxArrivalCovers = Number(value);
+        if (!Number.isInteger(maxArrivalCovers) || maxArrivalCovers < 1 || maxArrivalCovers > 500) {
+            throw validationError(
+                "Half-hour arrival capacity must be a whole number between 1 and 500.",
+                "maxArrivalCovers"
+            );
+        }
+        if (await this.getMaxOnlineArrivalCovers() === maxArrivalCovers) {
+            return this.getOnlineBookingState();
+        }
+        const actor = cleanText(audit.actor || "Admin", 100);
+        const updatedAt = this.nowIso();
+        await this.store.transaction(async () => {
+            await this.store.setAppMeta("max_online_arrival_covers", maxArrivalCovers);
+            await this.store.setAppMeta("online_bookings_updated_at", updatedAt);
+            await this.store.setAppMeta("online_bookings_updated_by", actor);
+            await this.appendAdminEvent(
+                actor,
+                "online_arrival_capacity_changed",
+                "booking_settings",
+                "global",
+                `Half-hour arrival capacity changed to ${maxArrivalCovers}`,
+                audit.requestId
+            );
+        });
+        return this.getOnlineBookingState();
+    }
+
     async validateDate(date, {
         allowPast = false,
         allowClosedDay = false,
@@ -426,16 +467,47 @@ class BookingService {
         return partySize;
     }
 
-    async overlappingCovers(date, time, durationMinutes, excludeId = "") {
+    async coverUsage(date, time, durationMinutes, excludeId = "") {
         const start = timeToMinutes(time);
         const end = start + durationMinutes;
-        return (await this.store.listActiveBookings(date, excludeId, this.nowIso())).reduce((total, booking) => {
+        const bookings = await this.store.listActiveBookings(date, excludeId, this.nowIso());
+        const overlapping = bookings.reduce((total, booking) => {
             const bookingStart = timeToMinutes(booking.booking_time);
             const bookingEnd = bookingStart + booking.duration_minutes;
             return bookingStart < end && bookingEnd > start
                 ? total + booking.party_size
                 : total;
         }, 0);
+        const arrivals = bookings.reduce((total, booking) => booking.booking_time === time
+            ? total + booking.party_size
+            : total, 0);
+        return { overlapping, arrivals };
+    }
+
+    async overlappingCovers(date, time, durationMinutes, excludeId = "") {
+        return (await this.coverUsage(date, time, durationMinutes, excludeId)).overlapping;
+    }
+
+    async assertWithinCapacity(date, time, partySize, excludeId = "") {
+        const [usage, maxOnlineCovers, maxOnlineArrivalCovers] = await Promise.all([
+            this.coverUsage(date, time, BOOKING_CONFIG.durationMinutes, excludeId),
+            this.getMaxOnlineCovers(),
+            this.getMaxOnlineArrivalCovers()
+        ]);
+        if (usage.arrivals + partySize > maxOnlineArrivalCovers) {
+            throw validationError(
+                `This booking would exceed the ${maxOnlineArrivalCovers}-cover half-hour arrival limit. Use the override if the pub can accommodate it.`,
+                "partySize",
+                "ARRIVAL_CAPACITY_EXCEEDED"
+            );
+        }
+        if (usage.overlapping + partySize > maxOnlineCovers) {
+            throw validationError(
+                `This booking would exceed the ${maxOnlineCovers}-cover peak limit. Use the override if the pub can accommodate it.`,
+                "partySize",
+                "CAPACITY_EXCEEDED"
+            );
+        }
     }
 
     async getAvailability(date, partySizeValue, excludeId = "") {
@@ -447,16 +519,21 @@ class BookingService {
         const blocks = await this.store.listBlocks(validDate);
         const blockedTimes = new Set(blocks.map((block) => block.booking_time));
         const wholeDayBlocked = blockedTimes.has("*");
-        const maxOnlineCovers = await this.getMaxOnlineCovers();
+        const [maxOnlineCovers, maxOnlineArrivalCovers] = await Promise.all([
+            this.getMaxOnlineCovers(),
+            this.getMaxOnlineArrivalCovers()
+        ]);
         const slots = [];
         for (const time of this.slotsForDate(validDate, serviceHours)) {
-            const usedCovers = await this.overlappingCovers(
+            const usage = await this.coverUsage(
                 validDate,
                 time,
                 BOOKING_CONFIG.durationMinutes,
                 excludeId
             );
-            const remainingCovers = Math.max(0, maxOnlineCovers - usedCovers);
+            const remainingPeakCovers = Math.max(0, maxOnlineCovers - usage.overlapping);
+            const remainingArrivalCovers = Math.max(0, maxOnlineArrivalCovers - usage.arrivals);
+            const remainingCovers = Math.min(remainingPeakCovers, remainingArrivalCovers);
             const tooSoon = validDate === current.date &&
                 timeToMinutes(time) < current.minutes + BOOKING_CONFIG.minimumNoticeMinutes;
             const blocked = wholeDayBlocked || blockedTimes.has(time);
@@ -471,6 +548,8 @@ class BookingService {
                 available,
                 waitlistEligible: !tooSoon && !blocked && !available,
                 remainingCovers,
+                remainingPeakCovers,
+                remainingArrivalCovers,
                 reason
             });
         }
@@ -597,18 +676,7 @@ class BookingService {
                     );
                 }
             } else if (!overrideCapacity) {
-                const used = await this.overlappingCovers(
-                    value.date,
-                    value.time,
-                    BOOKING_CONFIG.durationMinutes
-                );
-                if (used + value.partySize > await this.getMaxOnlineCovers()) {
-                    throw validationError(
-                        "This booking would exceed the current online cover limit. Use the override if the pub can accommodate it.",
-                        "partySize",
-                        "CAPACITY_EXCEEDED"
-                    );
-                }
+                await this.assertWithinCapacity(value.date, value.time, value.partySize);
             }
             const inserted = await this.store.insertBooking({
                 id,
@@ -957,12 +1025,16 @@ class BookingService {
             specialRequest: bookings.filter((booking) => booking.attention.specialRequest).length,
             waiting: waitlist.filter((entry) => entry.status === "waiting").length
         };
-        const maxOnlineCovers = await this.getMaxOnlineCovers();
+        const [maxOnlineCovers, maxOnlineArrivalCovers] = await Promise.all([
+            this.getMaxOnlineCovers(),
+            this.getMaxOnlineArrivalCovers()
+        ]);
         return {
             date,
             config: {
                 ...BOOKING_CONFIG,
                 maxOnlineCovers,
+                maxOnlineArrivalCovers,
                 serviceHours: undefined
             },
             service: this.serviceRuleForDate(date, serviceHours),
@@ -1105,19 +1177,7 @@ class BookingService {
         }
         const overrideCapacity = input.overrideCapacity === true;
         if (ACTIVE_STATUSES.has(status) && !overrideCapacity) {
-            const used = await this.overlappingCovers(
-                value.date,
-                value.time,
-                BOOKING_CONFIG.durationMinutes,
-                id
-            );
-            if (used + value.partySize > await this.getMaxOnlineCovers()) {
-                throw validationError(
-                    "This change would exceed the current cover limit.",
-                    "partySize",
-                    "CAPACITY_EXCEEDED"
-                );
-            }
+            await this.assertWithinCapacity(value.date, value.time, value.partySize, id);
         }
         const now = this.nowIso();
         const scheduleChanged = value.date !== existing.booking_date ||
@@ -1156,13 +1216,7 @@ class BookingService {
         ].filter(([, next, previous]) => next !== previous).map(([label]) => label);
         const updated = await this.store.transaction(async () => {
             if (ACTIVE_STATUSES.has(status) && !overrideCapacity) {
-                const transactionalUsed = await this.overlappingCovers(
-                    value.date, value.time, BOOKING_CONFIG.durationMinutes, id
-                );
-                if (transactionalUsed + value.partySize > await this.getMaxOnlineCovers()) {
-                    throw validationError("This change would exceed the current cover limit.",
-                        "partySize", "CAPACITY_EXCEEDED");
-                }
+                await this.assertWithinCapacity(value.date, value.time, value.partySize, id);
             }
             const changed = await this.store.updateBooking(id, updatePatch);
             if (status !== existing.status) {

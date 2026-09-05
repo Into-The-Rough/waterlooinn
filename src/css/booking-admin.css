@@ -506,6 +506,8 @@ h2 {
 .admin-master-controls {
     display: flex;
     align-items: flex-end;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 26px;
     flex: 0 0 auto;
 }
