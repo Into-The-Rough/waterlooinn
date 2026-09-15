@@ -6,7 +6,7 @@
   Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com https://identity.netlify.com 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src 'self'; connect-src 'self' https://*.netlify.com https://*.netlify.app; form-action 'self'
 
 /admin/*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com https://identity.netlify.com 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; frame-src 'self'; connect-src 'self' https://*.netlify.com https://*.netlify.app https://api.github.com; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://unpkg.com https://identity.netlify.com 'unsafe-inline' 'unsafe-eval'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: blob:; frame-src 'self'; connect-src 'self' blob: https://*.netlify.com https://*.netlify.app https://api.github.com; form-action 'self'
 
 /admin/bookings/*
   Cache-Control: no-store
