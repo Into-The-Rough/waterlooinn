@@ -5,7 +5,8 @@
       "name": "Live music!",
       "description": "Dom Morgan - back by popular demand!",
       "day": "Saturday 19th September 8:30pm",
-      "image": "/images/4989a688-a9de-4273-883e-93109ce482f9.jpg"
+      "image": "/images/4989a688-a9de-4273-883e-93109ce482f9.jpg",
+      "imageStyle": "poster"
     }
   ]
 }

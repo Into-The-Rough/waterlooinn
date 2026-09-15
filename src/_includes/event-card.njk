@@ -1,0 +1,13 @@
+<article class="event-card{% if event.image %} event-card--with-image{% if event.imageStyle == 'photo' %} event-card--photo{% else %} event-card--poster{% endif %}{% endif %}">
+    {% if event.image %}
+    <a class="event-card-image" href="{{ event.image | escape }}" data-event-image aria-label="View full image for {{ event.name | escape }}">
+        <img src="{{ event.image | escape }}" alt="{{ event.name | escape }}" loading="lazy">
+        <span class="event-image-hint" aria-hidden="true">View full image &nearr;</span>
+    </a>
+    {% endif %}
+    <div class="event-card-body">
+        <span class="event-day">{{ event.day | escape }}</span>
+        <h3>{{ event.name | escape }}</h3>
+        <p>{{ event.description | escape }}</p>
+    </div>
+</article>

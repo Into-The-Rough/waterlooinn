@@ -175,6 +175,15 @@ collections:
               - { name: "description", label: "Description", widget: "text" }
               - { name: "day", label: "When", widget: "string", hint: "e.g. Every Sunday, First Friday of the month, 15th March" }
               - { name: "image", label: "Image (optional)", widget: "image", required: false }
+              - name: "imageStyle"
+                label: "Image display"
+                widget: "select"
+                default: "poster"
+                required: false
+                options:
+                  - { label: "Poster — show whole image", value: "poster" }
+                  - { label: "Photo — crop to fit", value: "photo" }
+                hint: "Defaults to Poster: use this for artwork with text or dates. Photo fills the image area and may crop the edges."
 
   # ==========================================
   # CAMPSITE

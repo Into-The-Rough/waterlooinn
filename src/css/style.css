@@ -892,9 +892,10 @@ h1, h2, h3, h4 {
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 72px 56px 24px;
     opacity: 0;
     visibility: hidden;
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease;
 }
 
 .lightbox.active {
@@ -903,9 +904,15 @@ h1, h2, h3, h4 {
 }
 
 .lightbox img {
-    max-width: 90vw;
-    max-height: 90vh;
+    max-width: 100%;
+    max-height: calc(100vh - 96px);
+    max-height: calc(100dvh - 96px);
     object-fit: contain;
+}
+
+.lightbox button:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 2px;
 }
 
 .lightbox-close {
@@ -1093,9 +1100,10 @@ h1, h2, h3, h4 {
 
 .events-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 32px;
-    margin-top: 48px;
+    max-width: 960px;
+    margin: 48px auto 0;
 }
 
 .event-card {
@@ -1104,14 +1112,53 @@ h1, h2, h3, h4 {
     border-bottom: 3px solid var(--gold);
 }
 
-.event-card img {
+.event-card--with-image {
+    display: grid;
+    grid-template-columns: minmax(0, 340px) minmax(0, 1fr);
+}
+
+.event-card-image {
+    display: block;
+    align-self: start;
+    min-width: 0;
+    color: var(--cream);
+    background: var(--green-darkest);
+}
+
+.event-card-image:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: -3px;
+}
+
+.event-card-image:hover,
+.event-card-image:focus-visible {
+    color: var(--gold-light);
+}
+
+.event-card-image img {
     width: 100%;
-    height: 200px;
+    height: auto;
+    max-height: 520px;
+    object-fit: contain;
+}
+
+.event-card--photo img {
+    height: 300px;
     object-fit: cover;
 }
 
+.event-image-hint {
+    display: block;
+    padding: 8px 12px;
+    font-size: 0.8125rem;
+    text-align: center;
+}
+
 .event-card-body {
-    padding: 24px;
+    align-self: center;
+    min-width: 0;
+    padding: clamp(24px, 4vw, 48px);
+    overflow-wrap: anywhere;
 }
 
 .event-day {
@@ -1125,7 +1172,7 @@ h1, h2, h3, h4 {
 }
 
 .event-card h3 {
-    font-size: 1.25rem;
+    font-size: 1.75rem;
     color: var(--green-dark);
     margin-bottom: 8px;
 }
@@ -1133,6 +1180,24 @@ h1, h2, h3, h4 {
 .event-card p {
     color: #5A5248;
     font-size: 0.9375rem;
+    white-space: pre-line;
+}
+
+@media (max-width: 640px) {
+    .event-card--with-image {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .event-card--poster .event-card-image {
+        width: 100%;
+        max-width: 340px;
+        justify-self: center;
+    }
+
+    .lightbox {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
 }
 
 /* ============================================

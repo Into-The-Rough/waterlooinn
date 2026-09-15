@@ -195,14 +195,7 @@ activeNav: home
             <h2 class="section-title centered">{{ events.title }}</h2>
             <div class="events-grid">
                 {% for event in events.items %}
-                <div class="event-card">
-                    {% if event.image %}<img src="{{ event.image }}" alt="{{ event.name }}" loading="lazy">{% endif %}
-                    <div class="event-card-body">
-                        <span class="event-day">{{ event.day }}</span>
-                        <h3>{{ event.name }}</h3>
-                        <p>{{ event.description }}</p>
-                    </div>
-                </div>
+                {% include "event-card.njk" %}
                 {% endfor %}
             </div>
         </div>
@@ -265,8 +258,8 @@ activeNav: home
     {% include "footer.njk" %}
 
     {# ========== LIGHTBOX ========== #}
-    <div class="lightbox" id="lightbox">
-        <button class="lightbox-close" aria-label="Close gallery">&times;</button>
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer" aria-hidden="true" tabindex="-1">
+        <button class="lightbox-close" aria-label="Close image viewer">&times;</button>
         <button class="lightbox-prev" aria-label="Previous image">&#8249;</button>
         <button class="lightbox-next" aria-label="Next image">&#8250;</button>
         <img src="" alt="" id="lightboxImg">

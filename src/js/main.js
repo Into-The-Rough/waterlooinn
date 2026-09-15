@@ -60,7 +60,7 @@
         });
     }
 
-    // --- Gallery lightbox ---
+    // --- Shared gallery/event image viewer ---
     const lightbox = document.getElementById('lightbox');
     const lightboxImg = document.getElementById('lightboxImg');
     const lightboxClose = document.querySelector('.lightbox-close');
@@ -70,45 +70,71 @@
 
     let currentIndex = 0;
     var gallerySources = [];
+    var currentSources = [];
+    var returnFocus = null;
+    var previousBodyOverflow = '';
 
-    galleryItems.forEach(function (item, index) {
+    galleryItems.forEach(function (item) {
         var img = item.querySelector('img');
         if (img) {
-            gallerySources.push({
+            var index = gallerySources.push({
                 src: img.src,
                 alt: img.alt
-            });
+            }) - 1;
 
             item.addEventListener('click', function () {
-                currentIndex = index;
-                openLightbox();
+                openLightbox(gallerySources, index);
             });
         }
     });
 
-    function openLightbox() {
-        if (gallerySources.length === 0) return;
-        lightboxImg.src = gallerySources[currentIndex].src;
-        lightboxImg.alt = gallerySources[currentIndex].alt;
+    document.querySelectorAll('[data-event-image]').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            // Leave the original-image link working when the viewer is unavailable.
+            if (!lightbox || !lightboxImg || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+            var img = link.querySelector('img');
+            if (!img) return;
+            e.preventDefault();
+            openLightbox([{ src: link.href, alt: img.alt }], 0, link);
+        });
+    });
+
+    function openLightbox(sources, index, trigger) {
+        if (!lightbox || !lightboxImg || sources.length === 0) return;
+        currentSources = sources;
+        currentIndex = index;
+        returnFocus = trigger || document.activeElement;
+        previousBodyOverflow = document.body.style.overflow;
+        lightboxImg.src = currentSources[currentIndex].src;
+        lightboxImg.alt = currentSources[currentIndex].alt;
+        if (lightboxPrev) lightboxPrev.hidden = currentSources.length <= 1;
+        if (lightboxNext) lightboxNext.hidden = currentSources.length <= 1;
         lightbox.classList.add('active');
+        lightbox.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
+        (lightboxClose || lightbox).focus();
     }
 
     function closeLightbox() {
+        if (!lightbox || !lightbox.classList.contains('active')) return;
         lightbox.classList.remove('active');
-        document.body.style.overflow = '';
+        lightbox.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = previousBodyOverflow;
+        if (returnFocus && returnFocus.isConnected) returnFocus.focus({ preventScroll: true });
     }
 
     function nextImage() {
-        currentIndex = (currentIndex + 1) % gallerySources.length;
-        lightboxImg.src = gallerySources[currentIndex].src;
-        lightboxImg.alt = gallerySources[currentIndex].alt;
+        if (currentSources.length <= 1) return;
+        currentIndex = (currentIndex + 1) % currentSources.length;
+        lightboxImg.src = currentSources[currentIndex].src;
+        lightboxImg.alt = currentSources[currentIndex].alt;
     }
 
     function prevImage() {
-        currentIndex = (currentIndex - 1 + gallerySources.length) % gallerySources.length;
-        lightboxImg.src = gallerySources[currentIndex].src;
-        lightboxImg.alt = gallerySources[currentIndex].alt;
+        if (currentSources.length <= 1) return;
+        currentIndex = (currentIndex - 1 + currentSources.length) % currentSources.length;
+        lightboxImg.src = currentSources[currentIndex].src;
+        lightboxImg.alt = currentSources[currentIndex].alt;
     }
 
     if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
@@ -124,9 +150,33 @@
     // Keyboard navigation for lightbox
     document.addEventListener('keydown', function (e) {
         if (!lightbox || !lightbox.classList.contains('active')) return;
-        if (e.key === 'Escape') closeLightbox();
-        if (e.key === 'ArrowRight') nextImage();
-        if (e.key === 'ArrowLeft') prevImage();
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closeLightbox();
+        }
+        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+            e.preventDefault();
+            if (e.key === 'ArrowRight') nextImage();
+            else prevImage();
+        }
+        if (e.key === 'Tab') {
+            var controls = [lightboxClose, lightboxPrev, lightboxNext].filter(function (control) {
+                return control && !control.hidden;
+            });
+            if (controls.length === 0) {
+                e.preventDefault();
+                lightbox.focus();
+                return;
+            }
+            var first = controls[0];
+            var last = controls[controls.length - 1];
+            if (!lightbox.contains(document.activeElement) ||
+                (e.shiftKey && document.activeElement === first) ||
+                (!e.shiftKey && document.activeElement === last)) {
+                e.preventDefault();
+                (e.shiftKey ? last : first).focus();
+            }
+        }
     });
 
     // --- Smooth scroll for anchor links ---
