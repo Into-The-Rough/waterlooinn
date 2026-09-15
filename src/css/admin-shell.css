@@ -68,6 +68,8 @@ body.content-admin-page {
 }
 
 #nc-root {
+    /* Keep Decap's absolute-positioned editor below the site admin header. */
+    position: relative;
     min-height: calc(100vh - 68px);
 }
 
