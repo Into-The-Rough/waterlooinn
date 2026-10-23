@@ -2,18 +2,18 @@
   "categories": [
     {
       "name": "Waterloo Plates of the Day",
-      "subtitle": "The new owners are truly committed to sourcing locally. This is to ensure only high quality fully traceable ingredients are used in our dishes. As such our suppliers are as follows: Meat from Redfearns Butchers of Buxton. Vegetables: Tomsons of Buxton, Fish: RG Morris of Buxton, Other Items: Holdsworths of Derbyshire. We profess not to be the cheapest and that's because good quality ingredients cost more to produce and more to procure. We don't serve unsustainable tasteless meat that is 'cooked' on mass!  Instead we try to serve good quality food that is individually cooked with care. Many of our dishes are available as gluten free on request (GFA)",
+      "subtitle": "The new owners are truly committed to sourcing locally. High quality fully traceable ingredients are used in our dishes. Our suppliers are as follows: Meat from Redfearns Butchers of Buxton. Vegetables: Tomsons of Buxton, Fish: RG Morris of Buxton, Other Items: Holdsworths of Derbyshire. We profess not to be the cheapest and that's because good quality ingredients cost more to produce and more to procure. We don't serve unsustainable, tasteless meat that has been reared or slaughtered cruelly nor 'cooked' on mass!  Instead we try to serve good quality food that is individually cooked with care. If we wouldn't eat in our own home then it doesn't get served in our pub! Many of our dishes are available as gluten free on request (GFA). ",
       "items": [
         {
-          "name": "The Waterloo Beef Burger (GFA)",
-          "description": "Derbyshire Beef burger sourced locally with cheddar, smoked bacon & onion jam served with baby gem, tomato, house slaw and hand-cut chips.",
+          "name": "Derbyshire Steak & Ale Pie",
+          "description": "House chunky chips & seasonal vegetables. ",
           "price": "£17.95",
           "tags": []
         },
         {
-          "name": "Beer Battered Haddock and Chips (GFA)",
-          "description": "Fresh haddock fillet in Waterloo ale batter with hand cut chips. Mushy peas and tartre sauce",
-          "price": "£17.95",
+          "name": "Cheese & Onion Pie\t",
+          "description": "Baked beans, seasonal vegetables & house chunky chips",
+          "price": "£16.95",
           "tags": null
         },
         {
@@ -23,9 +23,9 @@
           "tags": null
         },
         {
-          "name": "Grilled Chicken Ceaser Salad",
-          "description": "Original caeser dressing, Parmesan, Garlic Croutons, Crispy Bacon, Baby Gem Lettuce. Vegetarian Available £15.95",
-          "price": "£17.95 /£15.95",
+          "name": "Homemade Cottage Pie\tTopped with creamed mash and a cheese crust, with seasonal vegetables",
+          "description": "Topped with creamed mash and a cheese crust, with seasonal vegetables",
+          "price": "£17.95 ",
           "tags": [
             "V",
             "VE",
@@ -33,51 +33,56 @@
           ]
         },
         {
-          "name": "Home made Derbyshire steak and ale pie",
-          "description": "served with hand cut chips, salted butter peas and red cabbage,",
-          "price": "£17.95"
+          "name": "Beer Battered Haddock £18.95 ",
+          "description": "Mushy peas, homemade tartare sauce, charred lemon & triple cut chips",
+          "price": "£18.95 "
         },
         {
-          "name": "Mature Cheddar and Onion Pie (V)",
-          "description": "served with house chips, beans and seasonal veg",
-          "price": "£16.95",
+          "name": "Waterloo Derbyshire Beef Burger\t",
+          "description": "Mature Cheddar, Danish smoked bacon, brioche bun, homemade burger sauce, house slaw, side salad & skin-on fries",
+          "price": "£18.50 ",
           "tags": [
             "V"
           ]
         },
         {
-          "name": "House Pasta with toasted garlic ciabatta (GFA)",
-          "description": "Cherry Tomato, Pesto & Parmesan penne, topped with rocket.. Vegan cheese available",
-          "price": "£15.95",
+          "name": "Plant-Based Bean Burger\t",
+          "description": "Vegan cheese, baby gem lettuce, crinkle-cut gherkin, salad, fries & house slaw",
+          "price": "£17.95",
           "tags": [
             "V",
             "VE"
           ]
         },
         {
-          "name": "Whitby Scampi",
-          "description": "Homemade tartre sauce, charred lemon, fries, house salad, garden peas. ",
+          "name": "Cumberland Sausage Ring & Mash (Quorn sausages available)",
+          "description": "Garlic mash, onion marmalade gravy & seasonal veg, topped with crispy onions",
+          "price": "£18.95"
+        },
+        {
+          "name": "Farm to Fork: Derbyshire 8oz Ribeye\t£23.95 Grilled tomato & Portobello mushroom, house salad, beer battered onion ring & chunky chips",
+          "description": "Grilled tomato & Portobello mushroom, house salad, beer battered onion ring & chunky chips",
+          "price": "£23.95"
+        },
+        {
+          "description": " Hickory BBQ sauce, smoked bacon, mature Cheddar, red cabbage slaw, garden peas & skin-on fries",
+          "name": "Farm to Fork: Huntsman Grilled Chicken",
           "price": "£17.95"
         },
         {
-          "name": "Farm to Fork: Derbyshire Ribeye Steak (GFA)",
-          "description": "Beer Battered Onion Rings, Triple Cut Chips, Grilled flat mushroom, House Salad and Roasted Tomato",
-          "price": "£22.95"
+          "name": "Whitby Scampi  ",
+          "description": "House salad, garden peas, homemade tartare sauce, charred lemon & fries",
+          "price": "£17.95"
         },
         {
-          "description": "Served with Triple Cut Chips, House Salad, Roasted Tomato and Grilled flat mushroom",
-          "name": "Farm to Fork: Garlic and Thyme Chicken (GFA)",
-          "price": "£18.95"
+          "name": "Mushroom & Pea Gnocchi\t",
+          "description": "Topped with rocket & Parmesan, served with garlic ciabatta",
+          "price": "£16.95"
         },
         {
-          "name": "Farm to Fork: Cajun Butter Chicken (GFA)",
-          "description": "Served with Triple Cut Chips,  House Salad, Grilled flat mushroom and Roasted Tomato",
-          "price": "£18.95"
-        },
-        {
-          "name": "Farm to Fork: Gammon Egg & Peas (GFA)",
-          "description": "Served with Triple Cut Chips,  House Salad, Grilled flat mushroom and Roasted Tomato",
-          "price": "£18.95"
+          "name": "Steak Sauces\t",
+          "price": "£3.50",
+          "description": "Peppercorn  ·  Hartington Blue Cheese  ·  Garlic Butter"
         }
       ]
     },
