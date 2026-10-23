@@ -2,11 +2,29 @@
   "title": "What's On",
   "items": [
     {
-      "name": "Live music!",
-      "description": "Dom Morgan - back by popular demand!",
-      "day": "Saturday 19th September 8:30pm",
-      "image": "/images/4989a688-a9de-4273-883e-93109ce482f9.jpg",
+      "name": "Live music ! Tommy Raye Fayre",
+      "description": "Classic hits, 70’s - 90’s. Fantastic vocals and live band back by demand !",
+      "day": "Saturday 24th October 8:30pm",
+      "image": "",
       "imageStyle": "poster"
+    },
+    {
+      "imageStyle": "poster",
+      "name": "Live Music ! Gold Top",
+      "day": "Saturday 7th November 8pm",
+      "description": "The legend returns to the Waterloo!! 1960’s/ 1970’s classics played by the one and only Gold Top "
+    },
+    {
+      "imageStyle": "poster",
+      "name": "Whiskey Tasting ",
+      "description": "Join our tasting master sampling some of the best malts on this guided whiskey tasting journey at the Waterloo. ",
+      "day": "Sunday 13th December evening pm."
+    },
+    {
+      "imageStyle": "poster",
+      "name": "Live Music! Dom Morgan",
+      "description": "Back by popular demand the fantastic Dom Morgan: prepare to dance the night away !",
+      "day": "Boxing night Saturday 26th December "
     }
   ]
 }
