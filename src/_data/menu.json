@@ -23,7 +23,7 @@
           "tags": null
         },
         {
-          "name": "Homemade Cottage Pie\tTopped with creamed mash and a cheese crust, with seasonal vegetables",
+          "name": "Homemade Cottage Pie\t",
           "description": "Topped with creamed mash and a cheese crust, with seasonal vegetables",
           "price": "£17.95 ",
           "tags": [
@@ -55,12 +55,12 @@
           ]
         },
         {
-          "name": "Cumberland Sausage Ring & Mash (Quorn sausages available)",
+          "name": "Cumberland Sausage Ring  (Quorn sausages available)",
           "description": "Garlic mash, onion marmalade gravy & seasonal veg, topped with crispy onions",
           "price": "£18.95"
         },
         {
-          "name": "Farm to Fork: Derbyshire 8oz Ribeye\t£23.95 Grilled tomato & Portobello mushroom, house salad, beer battered onion ring & chunky chips",
+          "name": "Farm to Fork: Derbyshire 8oz Ribeye\t",
           "description": "Grilled tomato & Portobello mushroom, house salad, beer battered onion ring & chunky chips",
           "price": "£23.95"
         },
