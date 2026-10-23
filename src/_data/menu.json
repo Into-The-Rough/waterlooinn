@@ -1,7 +1,7 @@
 {
   "categories": [
     {
-      "name": "Waterloo Plates of the Day",
+      "name": "Winter Menu from 23rd October 2026",
       "subtitle": "The new owners are truly committed to sourcing locally. High quality fully traceable ingredients are used in our dishes. Our suppliers are as follows: Meat from Redfearns Butchers of Buxton. Vegetables: Tomsons of Buxton, Fish: RG Morris of Buxton, Other Items: Holdsworths of Derbyshire. We profess not to be the cheapest and that's because good quality ingredients cost more to produce and more to procure. We don't serve unsustainable, tasteless meat that has been reared or slaughtered cruelly nor 'cooked' on mass!  Instead we try to serve good quality food that is individually cooked with care. If we wouldn't eat in our own home then it doesn't get served in our pub! Many of our dishes are available as gluten free on request (GFA). ",
       "items": [
         {
@@ -87,25 +87,25 @@
       ]
     },
     {
-      "name": "House Burgers & Wraps",
-      "subtitle": "Burgers available all day, wraps and ciabattas until 5pm. All meat for our burgers is sourced locally.",
+      "name": "Waterloo Sandwiches & Wraps (served until 5pm)",
+      "subtitle": "Our lighter wraps and ciabattas are available until 5pm. ",
       "items": [
         {
-          "name": "Derbyshire Beef Burger (GFA)",
-          "description": "Topped with local Hartington Cheddar, Baby Gem Lettuce, Crinkled Gherkin, Salad, Fries, House Slaw.",
-          "price": "£17.95",
+          "name": "Chicken Mayonnaise, baby gem lettuce & stuffing hot sandwich ",
+          "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad  ·  £11.95 Chicken Mayonnaise Baby gem lettuce & stuffing Prawn Marie Rose Crisp baby gem lettuce Tuna Mayonnaise & Cucumber Hartington Mature Cheddar & Branston Pickle",
+          "price": "£11.95",
           "tags": []
         },
         {
-          "name": "Cajan Chicken Burger (GFA)",
-          "description": "Topped with local Hartington Cheddar, Baby Gem Lettuce, Crinkled Gherkin, Salad, Fries, House Slaw. Gluten Free Bread Available",
-          "price": "£17.95",
+          "name": "Tuna Mayonnaise & Cucumber hot sandwich",
+          "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad ",
+          "price": "£11.95",
           "tags": null
         },
         {
-          "name": "Plant Based Bean Burger (GFA)",
-          "description": "Topped with Vegan Cheese,  Baby Gem Lettuce, Crinkled Gherkin, Salad, Fries, House Slaw. Gluten Free Bread Available",
-          "price": "£17.95",
+          "name": "Prawn Marie Rose Crisp with baby gem lettuce hot sandwich",
+          "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad ",
+          "price": "£11.95",
           "tags": [
             "VE",
             "V"
@@ -120,7 +120,7 @@
         {
           "name": "The Ultimate Fish Goujon (until 5pm)",
           "description": "Garlic Mayonaise, baby gem lettuce. Served with side salad, house slaw and tortilla crisps.  ",
-          "price": "£10.95",
+          "price": "£11.95",
           "tags": []
         },
         {
@@ -130,6 +130,11 @@
           "tags": [
             "VE"
           ]
+        },
+        {
+          "name": "Hartington Mature Cheddar & Branston Pickle Hot sandwich ",
+          "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad ",
+          "price": "£11.95"
         }
       ]
     },
@@ -155,23 +160,23 @@
           ]
         },
         {
-          "name": "Crispy Halloumi Fries",
-          "description": "Balsamic Rocket Salad, Sweet Chilli Sauce ",
-          "price": "£7.95",
+          "name": "Derbyshire Lamb Kofta\t  ",
+          "description": " Served on a charred red pepper leaf salad with tzatziki ",
+          "price": "£8.95",
           "tags": []
         },
         {
-          "name": "Breaded Brie",
-          "description": "Napoli Tomato Sauce, Parmesan, Parsley ",
+          "name": " North Atlantic Prawn Cocktail",
+          "description": " Homemade Marie Rose sauce, baby gem lettuce, cucumber, sourdough & charred lemon ",
           "price": "£8.95",
           "tags": [
             "V"
           ]
         },
         {
-          "name": "Waterloo Tortilla Nachos",
-          "description": "Homemade Cajun Cheese sauce, Longley Farm Sourced Cream, Tomato Salsa. To Share or Individual",
-          "price": "£8.95 / £12.95",
+          "name": "Chicken Liver & Brandy Pâté\tBramley apple chutney, toasted sourdough & side salad",
+          "description": "Bramley apple chutney, toasted sourdough & side salad",
+          "price": "£8.95 ",
           "tags": []
         }
       ]
