@@ -2,7 +2,7 @@
   "categories": [
     {
       "name": "Winter Menu from 23rd October 2026",
-      "subtitle": "The new owners are truly committed to sourcing locally. High quality fully traceable ingredients are used in our dishes. Our suppliers are as follows: Meat from Redfearns Butchers of Buxton. Vegetables: Tomsons of Buxton, Fish: RG Morris of Buxton, Other Items: Holdsworths of Derbyshire. We profess not to be the cheapest and that's because good quality ingredients cost more to produce and more to procure. We don't serve unsustainable, tasteless meat that has been reared or slaughtered cruelly nor 'cooked' on mass!  Instead we try to serve good quality food that is individually cooked with care. If we wouldn't eat in our own home then it doesn't get served in our pub! Many of our dishes are available as gluten free on request (GFA). ",
+      "subtitle": "The new owners are truly committed to sourcing locally. High quality fully traceable ingredients are used in our dishes. Our suppliers are as follows: Meat from Redfearns Butchers of Buxton. Vegetables: Tomsons of Buxton, Fish: RG Morris of Buxton, Other Items: Holdsworths of Derbyshire. We profess not to be the cheapest and that's because good quality ingredients cost more to produce and more to procure. We don't serve unsustainable, tasteless meat that has been reared or slaughtered cruelly nor 'cooked' on mass!  Instead we try to serve good quality food that is cooked with care. If we wouldn't eat in our own home then it doesn't get served in our pub! Many of our dishes are available gluten free on request (GFA). ",
       "items": [
         {
           "name": "Derbyshire Steak & Ale Pie",
@@ -87,23 +87,23 @@
       ]
     },
     {
-      "name": "Waterloo Sandwiches & Wraps (served until 5pm)",
-      "subtitle": "Our lighter wraps and ciabattas are available until 5pm. ",
+      "name": "Waterloo Sandwiches & Wraps ",
+      "subtitle": "Our wraps and ciabattas are available until 5pm. ",
       "items": [
         {
-          "name": "Chicken Mayonnaise, baby gem lettuce & stuffing hot sandwich ",
-          "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad  ·  £11.95 Chicken Mayonnaise Baby gem lettuce & stuffing Prawn Marie Rose Crisp baby gem lettuce Tuna Mayonnaise & Cucumber Hartington Mature Cheddar & Branston Pickle",
+          "name": "Chicken Mayonnaise, baby gem lettuce & stuffing ciabatta",
+          "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad  ",
           "price": "£11.95",
           "tags": []
         },
         {
-          "name": "Tuna Mayonnaise & Cucumber hot sandwich",
+          "name": "Tuna Mayonnaise & Cucumber toasted ciabatta",
           "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad ",
           "price": "£11.95",
           "tags": null
         },
         {
-          "name": "Prawn Marie Rose Crisp with baby gem lettuce hot sandwich",
+          "name": "Prawn Marie Rose Crisp with crisp baby gem ciabatta",
           "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad ",
           "price": "£11.95",
           "tags": [
@@ -112,19 +112,19 @@
           ]
         },
         {
-          "name": "Waterloo Crispy Chicken Wrap ( until 5pm)",
+          "name": "Waterloo Crispy Chicken Wrap (firm favourite!)",
           "description": "Breaded chicken with garlic mayonaise, and sweet baby gem lettuce. Served with side salad, house slaw and tortilla crisps.Delicious !",
           "price": "£10.95",
           "tags": []
         },
         {
-          "name": "The Ultimate Fish Goujon (until 5pm)",
+          "name": "The Ultimate Fish Goujon ",
           "description": "Garlic Mayonaise, baby gem lettuce. Served with side salad, house slaw and tortilla crisps.  ",
           "price": "£11.95",
           "tags": []
         },
         {
-          "name": "Crispy Halloumi & Sweet Chilli Wrap (until 5pm)",
+          "name": "Crispy Halloumi & Sweet Chilli Wrap ",
           "description": "Baby Gem lettuce, Served with side salad, house slaw and tortilla crisps.  ",
           "price": "£10.95",
           "tags": [
@@ -132,7 +132,7 @@
           ]
         },
         {
-          "name": "Hartington Mature Cheddar & Branston Pickle Hot sandwich ",
+          "name": "Hartington Mature Cheddar & Branston Pickle Ciabatta",
           "description": "Toasted ciabatta, served with red cabbage slaw, Pipers sea salt crisps & house salad ",
           "price": "£11.95"
         }
@@ -174,7 +174,7 @@
           ]
         },
         {
-          "name": "Chicken Liver & Brandy Pâté\tBramley apple chutney, toasted sourdough & side salad",
+          "name": "Chicken Liver & Brandy Pâté",
           "description": "Bramley apple chutney, toasted sourdough & side salad",
           "price": "£8.95 ",
           "tags": []
@@ -192,9 +192,9 @@
           "tags": []
         },
         {
-          "name": "Loaded Fries (GFA)",
-          "description": "Choose from Hartington Cheddar, BBQ & Crispy Onion, Truffle & Parmesan, Cajan. Delicious !",
-          "price": "£5.50 - £6",
+          "name": "Festive Cheese Fries Crispy stuffing, cranberry sauce & thick house gravy",
+          "description": "Crispy stuffing, cranberry sauce & thick house gravy",
+          "price": " £6",
           "tags": []
         },
         {
@@ -215,9 +215,9 @@
           ]
         },
         {
-          "name": "House Slaw",
-          "description": "",
-          "price": "£3.50",
+          "name": "Honey Mustard Pigs in Blankets ",
+          "description": "Winter is here !",
+          "price": "£5.00",
           "tags": [
             "VE",
             "GF"
@@ -242,8 +242,8 @@
           "tags": []
         },
         {
-          "name": "Apple & Berry Crumble",
-          "description": "Local fruit under a buttery oat crumble with custard or cream",
+          "name": "Homemade Bread & Butter Pudding  ",
+          "description": "Served with custard or ice cream",
           "price": "£7.25",
           "tags": [
             "V",
