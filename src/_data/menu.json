@@ -26,11 +26,7 @@
           "name": "Homemade Cottage Pie\t",
           "description": "Topped with creamed mash and a cheese crust, with seasonal vegetables",
           "price": "£17.95 ",
-          "tags": [
-            "V",
-            "VE",
-            "GF"
-          ]
+          "tags": null
         },
         {
           "name": "Beer Battered Haddock £18.95 ",
@@ -41,18 +37,13 @@
           "name": "Waterloo Derbyshire Beef Burger\t",
           "description": "Mature Cheddar, Danish smoked bacon, brioche bun, homemade burger sauce, house slaw, side salad & skin-on fries",
           "price": "£18.50 ",
-          "tags": [
-            "V"
-          ]
+          "tags": null
         },
         {
           "name": "Plant-Based Bean Burger\t",
           "description": "Vegan cheese, baby gem lettuce, crinkle-cut gherkin, salad, fries & house slaw",
           "price": "£17.95",
-          "tags": [
-            "V",
-            "VE"
-          ]
+          "tags": null
         },
         {
           "name": "Cumberland Sausage Ring  (Quorn sausages available)",
