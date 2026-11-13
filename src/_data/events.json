@@ -2,19 +2,6 @@
   "title": "What's On",
   "items": [
     {
-      "name": "Live music ! Timmy Raye Fayre",
-      "description": "Classic hits, 70’s - 90’s. Fantastic vocals and live band back by demand !",
-      "day": "Saturday 24th October 8:30pm",
-      "image": "",
-      "imageStyle": "poster"
-    },
-    {
-      "imageStyle": "poster",
-      "name": "Live Music ! Gold Top",
-      "day": "Saturday 7th November 8pm",
-      "description": "The legend returns to the Waterloo!! 1960’s/ 1970’s classics played by the one and only Gold Top "
-    },
-    {
       "imageStyle": "poster",
       "name": "Whiskey Tasting ",
       "description": "Join our tasting master sampling some of the best malts on this guided whiskey tasting journey at the Waterloo. ",
@@ -30,7 +17,8 @@
       "imageStyle": "poster",
       "name": "Special Christmas Fayre Menu ! ",
       "description": "Pre order your seasonal celebration Christmas lunch or roastdinner with our 2026 Christmas Fayre Menu:\nIdeal for workplace lunches, group celebrations or extended family pre-Xmas gathering. Menu available from 1st November - 24th December only.\nPlaces are limited so please book in advance, thank you. ",
-      "day": "1st November - 24th December pre order only."
+      "day": "1st November - 24th December pre order only.",
+      "image": "/images/the-waterloo-inn-christmas-fayre-menu.png"
     }
   ]
 }
