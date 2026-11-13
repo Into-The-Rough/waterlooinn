@@ -263,5 +263,11 @@
     }
   ],
   "allergenNote": "Please ask a member of staff about allergens. We cater for dietary requirements where possible. ",
-  "pdfMenu": "/uploads/the-waterloo-inn-christmas-fayre-menu.png"
+  "posters": [
+    {
+      "image": "/images/the-waterloo-inn-christmas-fayre-menu.png",
+      "title": "Christmas Fayre Menu",
+      "alt": "The Waterloo Inn Christmas Fayre menu, pre-order only"
+    }
+  ]
 }

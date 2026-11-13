@@ -1082,6 +1082,28 @@ h1, h2, h3, h4 {
 .tag-ve { background: #F1F8E9; color: #558B2F; }
 .tag-gf { background: #FFF8E1; color: #F57F17; }
 
+.menu-poster {
+    text-align: center;
+}
+
+.menu-poster .divider {
+    margin-bottom: 32px;
+}
+
+.menu-poster-link {
+    display: inline-block;
+    max-width: 640px;
+    width: 100%;
+}
+
+.menu-poster-link img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
 .menu-note {
     text-align: center;
     color: #8A7E72;

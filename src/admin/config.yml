@@ -133,8 +133,18 @@ collections:
                   - { name: "description", label: "Description", widget: "string", required: false }
                   - { name: "price", label: "Price", widget: "string", hint: "Include the £ sign, e.g. £9.95" }
                   - { name: "tags", label: "Dietary Tags", widget: "select", multiple: true, required: false, options: ["V", "VE", "GF"], hint: "V = Vegetarian, VE = Vegan, GF = Gluten Free" }
+          - name: "posters"
+            label: "Menu Photos / Posters (shown under the menu)"
+            label_singular: "Photo"
+            widget: "list"
+            required: false
+            hint: "Add a photo of a special menu, e.g. the Christmas Fayre. It appears on the Menu page underneath the food sections. Remove it here when it is no longer needed."
+            fields:
+              - { name: "image", label: "Photo", widget: "image" }
+              - { name: "title", label: "Heading (optional)", widget: "string", required: false, hint: "e.g. Christmas Fayre Menu" }
+              - { name: "alt", label: "Description (for accessibility)", widget: "string", required: false, hint: "Describe the photo briefly, e.g. The Waterloo Inn Christmas Fayre menu" }
           - { name: "allergenNote", label: "Allergen Note (bottom of menu)", widget: "string" }
-          - { name: "pdfMenu", label: "Downloadable PDF Menu (optional)", widget: "file", required: false, hint: "Upload a PDF version of your menu for customers to download", media_folder: "src/uploads", public_folder: "/uploads" }
+          - { name: "pdfMenu", label: "Downloadable PDF Menu (optional)", widget: "file", required: false, hint: "Upload a PDF version of your menu for customers to download", media_folder: "/src/uploads", public_folder: "/uploads" }
 
   # ==========================================
   # GALLERY

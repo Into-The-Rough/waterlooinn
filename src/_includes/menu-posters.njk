@@ -1,0 +1,21 @@
+{% for poster in menu.posters %}
+{% if poster.image %}
+<section class="menu-section">
+    <div class="container">
+        <div class="menu-category menu-poster">
+            {% if poster.title %}
+            <h2>{{ poster.title | escape }}</h2>
+            <div class="divider centered">
+                <span class="divider-line"></span>
+                <span class="divider-icon">&#9830; &#9830; &#9830;</span>
+                <span class="divider-line"></span>
+            </div>
+            {% endif %}
+            <a class="menu-poster-link" href="{{ poster.image | escape }}" target="_blank" rel="noopener" aria-label="View full size: {{ (poster.alt or poster.title or 'menu image') | escape }}">
+                <img src="{{ poster.image | escape }}" alt="{{ (poster.alt or poster.title or '') | escape }}" loading="lazy">
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endfor %}
