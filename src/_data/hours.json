@@ -2,31 +2,31 @@
   "items": [
     {
       "day": "Monday",
-      "times": "12:00 – 22:00"
+      "times": "Closed in November"
     },
     {
       "day": "Tuesday",
-      "times": "Closed"
+      "times": "Closed in November (except for community meets)"
     },
     {
       "day": "Wednesday",
-      "times": "12:00 – 22.00 no food"
+      "times": "17:00 – 22.00 drinks only"
     },
     {
       "day": "Thursday",
-      "times": "12:00 – 22.00"
+      "times": "12:00 – 22.00 food until 8pm"
     },
     {
       "day": "Friday",
-      "times": "12:00 – 23:00"
+      "times": "12:00 – 23:00 food until 8pm"
     },
     {
       "day": "Saturday",
-      "times": "12:00 – 23:00"
+      "times": "12:00 – 23:00 food until 8pm"
     },
     {
       "day": "Sunday",
-      "times": "12:00 – 21.00"
+      "times": "12:00 – 21.00 food until 7pm."
     }
   ]
 }
